@@ -1,0 +1,35 @@
+. The Core Simulator (The "World")
+📄 queue_env.py
+What it is: The Environment.
+Function: This is the router simulator itself. It defines the rules of the physics here: it generates random packets (traffic), puts them in the two queues, drains them based on the bandwidth split it receives, and calculates the final score (the Penalty/Reward based on the 3 and 1 holding costs). Every other script in this folder relies on this file to run.
+2. The Traditional Rules (No AI)
+📄 baselines.py
+What it is: The hard-coded human strategies.
+Function: Contains the mathematical logic for three standard router rules: the c-mu rule (always serve the expensive queue), LCQ (longest queue first), and the fixed 50/50 split. There is no machine learning in this file.
+📄 run_baselines.py
+What it is: The testing script for the human rules.
+Function: It plugs the rules from baselines.py into the simulator (queue_env.py) to see what score they get. It outputs the graph baseline_comparison.png.
+3. The AI Brains (The Neural Networks)
+📄 ddpg_agent.py
+What it is: The architecture for our first AI model.
+Function: Defines the actual Neural Networks for the DDPG algorithm. It contains the code for the "Actor" (makes decisions), the "Critic" (judges the decisions), and the Replay Buffer (memory).
+📄 sac_agent.py
+What it is: The architecture for our second, more advanced AI model.
+Function: Defines the Neural Networks for the SAC algorithm. Similar to DDPG, but it uses Twin Critics (two judges instead of one) and has built-in entropy tuning (it figures out how much to explore on its own).
+4. The Training & Execution Scripts (The "Gym")
+📄 train_ddpg.py
+What it is: The training loop for DDPG.
+Function: It creates a blank ddpg_agent, puts it in the queue_env, and forces it to play 300 rounds (episodes) so it can learn and adjust its weights. It outputs reward_curve.png to show how the AI improved over time.
+📄 demo.py
+What it is: A master presentation script.
+Function: This runs the baselines, trains a DDPG agent from scratch, evaluates it, and plots a massive 3-panel summary graph comparing them all (final_demo.png).
+📄 compare_agents.py
+What it is: The final showdown script.
+Function: This script trains both DDPG and SAC, and then pits them against the traditional rules to see which AI algorithm learned the best strategy. It outputs ddpg_vs_sac.png.
+5. The Output Graphs (Images)
+🖼️ baseline_comparison.png: The line graph showing how the 3 human rules handle traffic queues.
+🖼️ reward_curve.png: Shows the DDPG agent starting with terrible scores and climbing up to match the optimal score as it learns.
+🖼️ final_demo.png: The big 3-panel chart (learning curve, queue trajectories, and the final bar chart of costs).
+🖼️ ddpg_vs_sac.png: A graph directly comparing the learning speed and final queue lengths of DDPG versus SAC.
+6. System Files
+📁 __pycache__: You can ignore this. Python creates this folder automatically to store compiled bytecode to make your scripts load faster the next time you run them.
