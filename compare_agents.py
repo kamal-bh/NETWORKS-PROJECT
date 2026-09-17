@@ -9,7 +9,7 @@ from ddpg_agent import DDPGAgent
 from sac_agent  import SACAgent
 
 EPISODE_LENGTH = 200    # timesteps per episode
-NUM_EPISODES   = 250    # training episodes (fast but enough to converge)
+NUM_EPISODES   = 250    # training episodes
 EVAL_SEEDS     = 5      # seeds to average over during evaluation
 SMOOTH_WINDOW  = 20     # rolling average window for the plot
 
@@ -73,7 +73,7 @@ def train_ddpg(agent):
 
 
 def train_sac(agent):
-    # SAC is naturally stochastic — no external noise needed!
+    # SAC is naturally stochastic — no external noise needed
     env     = QueueEnv(episode_length=EPISODE_LENGTH)
     rewards = []
 
@@ -249,4 +249,4 @@ plt.tight_layout()
 plt.savefig("ddpg_vs_sac.png", dpi=150, bbox_inches="tight")
 print("  Saved: ddpg_vs_sac.png")
 plt.show()
-print("\n✅ Comparison complete!")
+print("\nComparison complete.")

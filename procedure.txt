@@ -21,5 +21,3 @@ What will happen: This will take about 1-2 minutes to run because it is training
 
 "For the final comparison, we trained two different state-of-the-art AI models: DDPG, and a more advanced one called SAC. Look at the bar chart on the right. This shows the average queue lengths (which represents delay). The lower the bar, the better. Both of our AI agents learned to manage the queues almost perfectly. In fact, because our simulation has discrete, random traffic spikes, the AI actually learned a nuanced strategy that slightly beats the rigid, human-coded c-mu rule!"
 
-Demo Tip: Because compare_agents.py takes a minute or two to run, you should hit Enter on that command, and then start explaining what the code is doing while the evaluators watch the terminal output count up. It makes for great live presentation pacing!
-

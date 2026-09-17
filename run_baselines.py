@@ -1,29 +1,6 @@
-"""
-run_baselines.py  —  Run all 3 baseline policies and plot the results
-======================================================================
-
-This script:
-  1. Creates the same 2-queue environment for each policy (same random seed).
-  2. Runs 200 timesteps under each policy.
-  3. Plots queue lengths over time (so you can see how each policy manages traffic).
-  4. Prints cumulative reward for each policy.
-
-HOW TO RUN:
-    cd to the wfq-drl-demo folder, then:
-        python run_baselines.py
-
-WHAT TO EXPECT:
-    - A matplotlib window with 3 subplots (one per policy).
-    - Each subplot shows Queue 0 (expensive) and Queue 1 (cheap) over time.
-    - The c-μ rule should keep the expensive queue (Q0) very short.
-    - Fixed split should let both queues grow more.
-    - Terminal output showing cumulative rewards — c-μ should be the best (least negative).
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Import our own files
 from queue_env import QueueEnv
 from baselines import cmu_rule, lcq_rule, fixed_split_rule
 
@@ -42,6 +19,7 @@ def run_episode(env, policy_fn, seed=42):
         rewards:    list of rewards (one per timestep)
         total_drops: total packets dropped during the episode
     """
+    
     np.random.seed(seed)
     state = env.reset()
 
@@ -63,10 +41,7 @@ def run_episode(env, policy_fn, seed=42):
     return q_history, rewards, env.total_drops
 
 
-# ──────────────────────────────────────────────────────────────────────
 # Define wrapper functions that match the signature run_episode expects
-# (each takes the env and extracts what it needs)
-# ──────────────────────────────────────────────────────────────────────
 
 def policy_cmu(env):
     """c-μ rule: needs actual queue lengths and holding costs."""
@@ -81,9 +56,7 @@ def policy_fixed(env):
     return fixed_split_rule(env.n_queues)
 
 
-# ──────────────────────────────────────────────────────────────────────
 # MAIN: run all three and plot
-# ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     SEED = 42
     EPISODE_LEN = 200
@@ -116,9 +89,9 @@ if __name__ == "__main__":
         print(f"  {name:30s}  Reward: {r['total_reward']:8.1f}   Drops: {r['drops']:.0f}")
     print("=" * 60 + "\n")
 
-    # ──────────────────────────────────────────────────────────────────
+
     # PLOT: Queue lengths over time for each policy
-    # ──────────────────────────────────────────────────────────────────
+
     fig, axes = plt.subplots(1, 3, figsize=(16, 4.5), sharey=True)
     fig.suptitle("Queue Lengths Over Time — Baseline Policies", fontsize=14, fontweight="bold")
 
@@ -141,9 +114,9 @@ if __name__ == "__main__":
     axes[0].set_ylabel("Queue Length (packets)")
     plt.tight_layout()
 
-    # Save the plot as a file (so you can see it even without a display)
+    # Save the plot as a file
     plt.savefig("baseline_comparison.png", dpi=150, bbox_inches="tight")
-    print("📊 Plot saved to: baseline_comparison.png")
+    print("Plot saved to: baseline_comparison.png")
 
     plt.show()
-    print("✅ Step 1 complete! Check the plot.")
+    print("Step 1 complete. Check the plot.")

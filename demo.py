@@ -1,18 +1,3 @@
-# demo.py
-# ============================================================
-# THE COMPLETE SIDE-BY-SIDE DEMO
-# Runs all baselines + trains DDPG + produces final 3-panel plot
-#
-# HOW TO RUN:
-#   python demo.py
-#
-# WHAT TO EXPECT:
-#   ~1-2 minutes of training, then a 3-panel figure showing:
-#     (a) DDPG learning curve with reference lines
-#     (b) Queue 0 (expensive) trajectories: all 4 policies
-#     (c) Bar chart of total cost per episode (lower = better)
-# ============================================================
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -22,9 +7,7 @@ from baselines import cmu_rule, lcq_rule, fixed_split_rule
 from ddpg_agent import DDPGAgent
 
 
-# ─────────────────────────────────────────────────────────────
 # SETTINGS  (tweak these if you want longer training, etc.)
-# ─────────────────────────────────────────────────────────────
 SEED            = 42
 EPISODE_LENGTH  = 200
 NUM_EPISODES    = 300    # training episodes
@@ -33,9 +16,7 @@ MIN_NOISE       = 0.05
 AVG_SEEDS       = 5      # how many seeds to average baselines over
 
 
-# ─────────────────────────────────────────────────────────────
 # PHASE 1: Run baselines
-# ─────────────────────────────────────────────────────────────
 def run_one_baseline(policy_name, seed=42):
     """Run one episode with a hand-crafted policy. Returns (q_history, reward, drops)."""
     np.random.seed(seed)
@@ -79,9 +60,7 @@ print(f"  LCQ Rule avg reward   : {lcq_avg:.1f}")
 print(f"  Fixed 50/50 avg reward: {fixed_avg:.1f}")
 
 
-# ─────────────────────────────────────────────────────────────
 # PHASE 2: Train DDPG agent
-# ─────────────────────────────────────────────────────────────
 print()
 print("=" * 55)
 print(f"  PHASE 2: Training DDPG ({NUM_EPISODES} episodes)...")
@@ -117,9 +96,7 @@ for ep in range(NUM_EPISODES):
               f" Noise: {noise_scale:.3f}")
 
 
-# ─────────────────────────────────────────────────────────────
 # PHASE 3: Evaluate trained agent (no noise = pure learned policy)
-# ─────────────────────────────────────────────────────────────
 print()
 print("=" * 55)
 print("  PHASE 3: Evaluating trained agent...")
@@ -162,9 +139,7 @@ print(f"  c-μ target:              {cmu_avg:.1f}")
 print(f"  Gap from optimal:        {gap_pct:.1f}%")
 
 
-# ─────────────────────────────────────────────────────────────
 # PHASE 4: Build the 3-panel figure
-# ─────────────────────────────────────────────────────────────
 print()
 print("=" * 55)
 print("  PHASE 4: Generating final comparison plot...")
@@ -299,7 +274,7 @@ plt.show()
 
 print()
 print("=" * 55)
-print("  ✅  All 3 steps complete!")
+print("All 3 steps complete")
 print(f"  DDPG final avg reward : {ddpg_avg:.1f}")
 print(f"  c-μ Rule (optimal)    : {cmu_avg:.1f}")
 print(f"  Gap from optimal      : {gap_pct:.1f}%")

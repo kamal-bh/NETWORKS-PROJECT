@@ -1,21 +1,3 @@
-# train_ddpg.py
-# ============================================================
-# This script:
-#   1. Gets baseline rewards (c-mu, lcq, fixed) for reference
-#   2. Trains the DDPG agent for 300 episodes
-#   3. Plots the reward-vs-episode learning curve
-#
-# HOW TO RUN:
-#   python train_ddpg.py
-#
-# WHAT TO EXPECT:
-#   - Training takes ~1-2 minutes on CPU
-#   - You'll see reward numbers printed every 20 episodes
-#   - Early episodes: large negative rewards (agent is bad, exploring randomly)
-#   - Later episodes: reward climbs toward -640 (the c-mu level)
-#   - A plot window appears + 'reward_curve.png' is saved
-# ============================================================
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -23,10 +5,6 @@ from queue_env import QueueEnv
 from baselines import cmu_rule, lcq_rule, fixed_split_rule
 from ddpg_agent import DDPGAgent
 
-
-# ─────────────────────────────────────────────────────────────
-# HELPER: run one full episode with any policy, return total reward
-# ─────────────────────────────────────────────────────────────
 def run_baseline_episode(policy_name, env, seed=42):
     np.random.seed(seed)
     env.reset()
@@ -47,9 +25,8 @@ def run_baseline_episode(policy_name, env, seed=42):
     return total_reward
 
 
-# ─────────────────────────────────────────────────────────────
 # STEP 1: Measure baseline rewards (average over 5 episodes)
-# ─────────────────────────────────────────────────────────────
+
 print("=" * 55)
 print("  Measuring baseline rewards...")
 print("=" * 55)
@@ -71,9 +48,8 @@ print(f"  Fixed 50/50 (floor):        {avg_fixed:.1f}")
 print()
 
 
-# ─────────────────────────────────────────────────────────────
 # STEP 2: Train the DDPG agent
-# ─────────────────────────────────────────────────────────────
+
 print("=" * 55)
 print("  Training DDPG agent (300 episodes)...")
 print("=" * 55)
@@ -98,16 +74,16 @@ for episode in range(NUM_EPISODES):
 
     for t in range(EPISODE_LENGTH):
 
-        # ── Agent picks an action ──────────────────────────
+        # Agent picks an action 
         action = agent.select_action(state, add_noise=True, noise_scale=noise_scale)
 
-        # ── Environment responds ──────────────────────────
+        # Environment responds 
         next_state, reward, done, _ = env.step(action)
 
-        # ── Store this experience in memory ──────────────
+        # Store this experience in memory 
         agent.store(state, action, reward, next_state, float(done))
 
-        # ── Learn from a random batch of past experiences ─
+        # Learn from a random batch of past experiences
         agent.learn()
 
         state        = next_state
@@ -118,7 +94,7 @@ for episode in range(NUM_EPISODES):
 
     episode_rewards.append(total_reward)
 
-    # Decay exploration noise (agent gets more confident over time)
+    # Decay exploration noise
     noise_scale = max(MIN_NOISE, noise_scale * NOISE_DECAY)
 
     # Print progress every 20 episodes
@@ -129,9 +105,8 @@ for episode in range(NUM_EPISODES):
               f"Noise scale: {noise_scale:.3f}")
 
 
-# ─────────────────────────────────────────────────────────────
-# STEP 3: Evaluate the trained agent (no noise = pure learned policy)
-# ─────────────────────────────────────────────────────────────
+# STEP 3: Evaluate the trained agent
+
 print()
 print("  Evaluating trained agent (no noise)...")
 
@@ -155,9 +130,7 @@ print(f"  Gap from optimal:               {gap_pct:.1f}%")
 print()
 
 
-# ─────────────────────────────────────────────────────────────
-# STEP 4: Plot — Reward vs Episode (the learning curve)
-# ─────────────────────────────────────────────────────────────
+# STEP 4: Plot — Reward vs Episode
 
 # Smooth the noisy reward curve with a rolling average (window=20)
 def rolling_average(data, window=20):
@@ -189,4 +162,4 @@ plt.savefig("reward_curve.png", dpi=150, bbox_inches="tight")
 print("  Plot saved to: reward_curve.png")
 plt.show()
 print()
-print("✅ Step 2 complete!")
+print("Step 2 complete.")
