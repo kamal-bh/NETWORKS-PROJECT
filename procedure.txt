@@ -1,32 +1,22 @@
 Stage 1: Show the Problem & The Human Rules
-What to type:
 
-bash
+source ~/python_aiml_projects/.venv/bin/activate
 
-
-python run_baselines.py
+python3 run_baselines.py
 What will happen: The terminal will print out the scores, and a graph (baseline_comparison.png) will pop up showing the 3 rules side-by-side. What you should say:
 
 "First, we created a simulation of a router with two queues. We tested standard, human-coded rules without any AI. As you can see in this graph, the 50/50 split does a terrible job. The c-mu rule (the green/red one) does the best, achieving a score of around -448. This -448 is the mathematical 'gold standard' we want our AI to try and beat." (Close the graph window to return to the terminal).
 
 Stage 2: Show the AI Learning Live
-What to type:
 
-bash
-
-
-python train_ddpg.py
+python3 train_ddpg.py
 What will happen: The terminal will start printing out "Episode 20... Episode 40..." every few seconds. After about a minute, a graph (reward_curve.png) will pop up. What you should say:
 
 "Now, we are training a Reinforcement Learning agent (DDPG) completely from scratch. It starts knowing nothing. If you look at the terminal, you can see its scores starting terribly (around -6000) and slowly improving. Now that it's done, look at this graph: The blue line is the AI learning. It starts at the bottom, learns from its mistakes, crosses the red line (the bad 50/50 rule), and climbs all the way up to match the green dashed line (the theoretical optimal rule)." (Close the graph window).
 
 Stage 3: The Grand Finale (AI vs. AI vs. Humans)
-What to type:
 
-bash
-
-
-python compare_agents.py
+python3 compare_agents.py
 What will happen: This will take about 1-2 minutes to run because it is training both the DDPG agent AND the SAC agent. Once it finishes, the final master graph (ddpg_vs_sac.png) will pop up showing the learning curves and a bar chart. What you should say:
 
 "For the final comparison, we trained two different state-of-the-art AI models: DDPG, and a more advanced one called SAC. Look at the bar chart on the right. This shows the average queue lengths (which represents delay). The lower the bar, the better. Both of our AI agents learned to manage the queues almost perfectly. In fact, because our simulation has discrete, random traffic spikes, the AI actually learned a nuanced strategy that slightly beats the rigid, human-coded c-mu rule!"
