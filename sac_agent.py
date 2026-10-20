@@ -9,12 +9,13 @@ from collections import deque
 
 
 class SACActorNetwork(nn.Module):
-    def __init__(self, state_dim=2, hidden=64, log_std_min=-20, log_std_max=2):
+    def __init__(self, state_dim=8, action_dim=8, hidden=128, log_std_min=-20, log_std_max=2):
         super().__init__()
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
+        self.action_dim = action_dim
 
-        # Shared feature extractor
+        # Shared trunk feature extractor
         self.trunk = nn.Sequential(
             nn.Linear(state_dim, hidden),
             nn.ReLU(),
@@ -22,40 +23,37 @@ class SACActorNetwork(nn.Module):
             nn.ReLU(),
         )
 
-        self.mean_head    = nn.Linear(hidden, 1)  
-        self.log_std_head = nn.Linear(hidden, 1)  
+        self.mean_head = nn.Linear(hidden, action_dim)
+        self.log_std_head = nn.Linear(hidden, action_dim)
 
     def forward(self, state):
-        x       = self.trunk(state)
-        mean    = self.mean_head(x)
+        x = self.trunk(state)
+        mean = self.mean_head(x)
         log_std = torch.clamp(self.log_std_head(x), self.log_std_min, self.log_std_max)
         return mean, log_std
 
     def sample(self, state):
         """
-        Sample an action using the reparameterization trick.
-        Returns: (action [w1,w2], log_prob, deterministic_action [w1,w2])
+        Samples continuous weights over the 8-simplex via reparameterized Gaussian
+        projected through Softmax.
         """
         mean, log_std = self.forward(state)
         std = log_std.exp()
         dist = Normal(mean, std)
-        z    = dist.rsample()                 
+        z = dist.rsample()
 
-        w1 = torch.sigmoid(z)                 
-        w2 = 1.0 - w1                         
-        action = torch.cat([w1, w2], dim=-1)   
+        # Continuous bandwidth allocation: Softmax guarantees weights in (0, 1) and sum to 1.0
+        action = F.softmax(z, dim=-1)
+        det_action = F.softmax(mean, dim=-1)
 
-        log_prob = dist.log_prob(z)
-        log_prob -= torch.log(w1 * w2 + 1e-6)  
-        log_prob  = log_prob.sum(dim=-1, keepdim=True) 
-        w1_det = torch.sigmoid(mean)
-        det_action = torch.cat([w1_det, 1.0 - w1_det], dim=-1)
+        # Log probability of latent Gaussian sample for entropy regularization
+        log_prob = dist.log_prob(z).sum(dim=-1, keepdim=True)
 
         return action, log_prob, det_action
 
 
 class SACCriticNetwork(nn.Module):
-    def __init__(self, state_dim=2, action_dim=2, hidden=64):
+    def __init__(self, state_dim=8, action_dim=8, hidden=128):
         super().__init__()
         self.network = nn.Sequential(
             nn.Linear(state_dim + action_dim, hidden),
@@ -71,7 +69,7 @@ class SACCriticNetwork(nn.Module):
 
 
 class SACReplayBuffer:
-    def __init__(self, capacity=10_000):
+    def __init__(self, capacity=20_000):
         self.buffer = deque(maxlen=capacity)
 
     def push(self, state, action, reward, next_state, done):
@@ -91,30 +89,37 @@ class SACReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
+
 class SACAgent:
     def __init__(
         self,
-        state_dim=2,
-        action_dim=2,
-        hidden=64,
+        state_dim=8,
+        action_dim=8,
+        hidden=128,
         lr=3e-4,
         gamma=0.99,
         tau=0.005,
         batch_size=64,
-        buffer_capacity=10_000,
-        target_entropy=-1.0,  
+        buffer_capacity=20_000,
+        target_entropy=None,
     ):
-        self.gamma      = gamma
-        self.tau        = tau
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.gamma = gamma
+        self.tau = tau
         self.batch_size = batch_size
 
-        self.actor           = SACActorNetwork(state_dim, hidden)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # Actor
+        self.actor = SACActorNetwork(state_dim, action_dim, hidden).to(self.device)
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr)
 
-        self.critic1 = SACCriticNetwork(state_dim, action_dim, hidden)
-        self.critic2 = SACCriticNetwork(state_dim, action_dim, hidden)
-        self.critic1_target = SACCriticNetwork(state_dim, action_dim, hidden)
-        self.critic2_target = SACCriticNetwork(state_dim, action_dim, hidden)
+        # Twin Critics & Targets
+        self.critic1 = SACCriticNetwork(state_dim, action_dim, hidden).to(self.device)
+        self.critic2 = SACCriticNetwork(state_dim, action_dim, hidden).to(self.device)
+        self.critic1_target = SACCriticNetwork(state_dim, action_dim, hidden).to(self.device)
+        self.critic2_target = SACCriticNetwork(state_dim, action_dim, hidden).to(self.device)
 
         self.critic1_target.load_state_dict(self.critic1.state_dict())
         self.critic2_target.load_state_dict(self.critic2.state_dict())
@@ -122,35 +127,26 @@ class SACAgent:
         self.c1_optimizer = optim.Adam(self.critic1.parameters(), lr=lr)
         self.c2_optimizer = optim.Adam(self.critic2.parameters(), lr=lr)
 
-
-        self.target_entropy  = target_entropy
-        self.log_alpha       = torch.tensor(0.0, requires_grad=True)
-        self.alpha           = self.log_alpha.exp().item()
+        # Target entropy heuristic: -dim(A)
+        self.target_entropy = target_entropy if target_entropy is not None else -float(action_dim)
+        self.log_alpha = torch.tensor(0.0, requires_grad=True, device=self.device)
+        self.alpha = self.log_alpha.exp().item()
         self.alpha_optimizer = optim.Adam([self.log_alpha], lr=lr)
-
 
         self.buffer = SACReplayBuffer(buffer_capacity)
 
     def select_action(self, state, deterministic=False):
-        """
-        deterministic=False during training  → sample from distribution (explore)
-        deterministic=True  during evaluation → use mean of distribution (exploit)
-        """
-        state_t = torch.FloatTensor(state).unsqueeze(0)
+        state_t = torch.FloatTensor(state).unsqueeze(0).to(self.device)
 
         with torch.no_grad():
-            _, _, det_action = self.actor.sample(state_t)
-
+            action, _, det_action = self.actor.sample(state_t)
             if deterministic:
-                action = det_action.squeeze(0).numpy()
+                act = det_action.squeeze(0).cpu().numpy()
             else:
-                action, _, _ = self.actor.sample(state_t)
-                action = action.squeeze(0).numpy()
+                act = action.squeeze(0).cpu().numpy()
 
-        # Safety clip + normalize
-        action = np.clip(action, 0.01, None)
-        action = action / action.sum()
-        return action
+        act = np.clip(act, 0.005, None)
+        return act / act.sum()
 
     def store(self, state, action, reward, next_state, done):
         self.buffer.push(state, action, reward, next_state, done)
@@ -160,51 +156,51 @@ class SACAgent:
             return None, None, None
 
         states, actions, rewards, next_states, dones = self.buffer.sample(self.batch_size)
-
+        states = states.to(self.device)
+        actions = actions.to(self.device)
+        rewards = rewards.to(self.device)
+        next_states = next_states.to(self.device)
+        dones = dones.to(self.device)
 
         with torch.no_grad():
-            # Sample next actions from the stochastic actor
             next_actions, next_log_probs, _ = self.actor.sample(next_states)
-
-            # Twin critics on next state — take the MINIMUM (conservative)
             q1_next = self.critic1_target(next_states, next_actions)
             q2_next = self.critic2_target(next_states, next_actions)
-            q_next  = torch.min(q1_next, q2_next)
-
-            # SAC Bellman target includes entropy bonus:
-            #   target_Q = r + γ * (min_Q_next  -  α * log_π_next)
-            #                                     ↑
-            #               This term rewards being uncertain (exploring)
+            q_next = torch.min(q1_next, q2_next)
             target_q = rewards + self.gamma * (1 - dones) * (q_next - self.alpha * next_log_probs)
 
-  
-        q1_pred     = self.critic1(states, actions)
-        c1_loss     = F.mse_loss(q1_pred, target_q)
+        # Critic updates
+        q1_pred = self.critic1(states, actions)
+        c1_loss = F.mse_loss(q1_pred, target_q)
         self.c1_optimizer.zero_grad()
         c1_loss.backward()
         self.c1_optimizer.step()
 
-        q2_pred     = self.critic2(states, actions)
-        c2_loss     = F.mse_loss(q2_pred, target_q)
+        q2_pred = self.critic2(states, actions)
+        c2_loss = F.mse_loss(q2_pred, target_q)
         self.c2_optimizer.zero_grad()
         c2_loss.backward()
         self.c2_optimizer.step()
 
+        # Actor update
         new_actions, log_probs, _ = self.actor.sample(states)
         q1_new = self.critic1(states, new_actions)
         q2_new = self.critic2(states, new_actions)
-        q_new  = torch.min(q1_new, q2_new)
+        q_new = torch.min(q1_new, q2_new)
         actor_loss = (self.alpha * log_probs - q_new).mean()
+
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
 
+        # Alpha temperature update
         alpha_loss = -(self.log_alpha * (log_probs + self.target_entropy).detach()).mean()
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()
         self.alpha_optimizer.step()
-        self.alpha = self.log_alpha.exp().item()   # sync alpha scalar
+        self.alpha = self.log_alpha.exp().item()
 
+        # Target network soft updates
         self._soft_update(self.critic1, self.critic1_target)
         self._soft_update(self.critic2, self.critic2_target)
 

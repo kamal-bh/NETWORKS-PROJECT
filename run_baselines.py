@@ -2,121 +2,113 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from queue_env import QueueEnv
-from baselines import cmu_rule, lcq_rule, fixed_split_rule
+from baselines import cmu_rule, lcq_rule, fixed_split_rule, wfq_static_rule, priority_queueing_rule
 
+QUEUE_LABELS = [
+    "Q0 (Net Control, h=10)",
+    "Q1 (Voice EF, h=8)",
+    "Q2 (Video AF4, h=6)",
+    "Q3 (Stream AF3, h=4)",
+    "Q4 (Crit Data AF2, h=3)",
+    "Q5 (Std Data AF1, h=2)",
+    "Q6 (Best Effort, h=1)",
+    "Q7 (Background, h=0.5)"
+]
+
+QUEUE_COLORS = [
+    "#e74c3c",  # Q0: Red
+    "#e67e22",  # Q1: Orange
+    "#f1c40f",  # Q2: Yellow
+    "#2ecc71",  # Q3: Green
+    "#1abc9c",  # Q4: Teal
+    "#3498db",  # Q5: Blue
+    "#9b59b6",  # Q6: Purple
+    "#7f8c8d",  # Q7: Gray
+]
 
 def run_episode(env, policy_fn, seed=42):
-    """
-    Run one full episode using a given policy function.
-
-    Args:
-        env:        a QueueEnv instance
-        policy_fn:  a function that takes (env) and returns an action [w1, w2]
-        seed:       random seed for reproducibility
-
-    Returns:
-        q_history:  list of queue-length snapshots (one per timestep)
-        rewards:    list of rewards (one per timestep)
-        total_drops: total packets dropped during the episode
-    """
-    
     np.random.seed(seed)
     state = env.reset()
-
-    q_history = []   # will store [[q1, q2], [q1, q2], ...]
+    q_history = []
     rewards = []
 
     done = False
     while not done:
-        # --- Ask the policy what to do ---
         action = policy_fn(env)
-
-        # --- Take one step in the environment ---
         state, reward, done, info = env.step(action)
-
-        # --- Record what happened ---
         q_history.append(info["queue_lengths"].copy())
         rewards.append(reward)
 
     return q_history, rewards, env.total_drops
 
 
-# Define wrapper functions that match the signature run_episode expects
-
 def policy_cmu(env):
-    """c-μ rule: needs actual queue lengths and holding costs."""
     return cmu_rule(env.queues, env.holding_costs)
 
+def policy_pq(env):
+    return priority_queueing_rule(env.queues)
+
+def policy_wfq(env):
+    return wfq_static_rule(env.n_queues)
+
 def policy_lcq(env):
-    """LCQ rule: needs actual queue lengths."""
     return lcq_rule(env.queues)
 
 def policy_fixed(env):
-    """Fixed 50/50 split: ignores everything."""
     return fixed_split_rule(env.n_queues)
 
 
-# MAIN: run all three and plot
 if __name__ == "__main__":
     SEED = 42
     EPISODE_LEN = 200
 
-    # --- Policy definitions ---
     policies = {
-        "c-μ Rule (Optimal)":    policy_cmu,
-        "LCQ (Longest Queue)":   policy_lcq,
-        "Fixed 50/50 Split":     policy_fixed,
+        "c-μ Rule": policy_cmu,
+        "Priority Queueing (PQ)": policy_pq,
+        "Static WFQ": policy_wfq,
+        "LCQ (Longest Queue)": policy_lcq,
     }
 
     results = {}
 
-    # --- Run each policy ---
     for name, policy_fn in policies.items():
-        env = QueueEnv(episode_length=EPISODE_LEN)
+        env = QueueEnv(n_queues=8, episode_length=EPISODE_LEN)
         q_hist, rews, drops = run_episode(env, policy_fn, seed=SEED)
         results[name] = {
-            "q_history": np.array(q_hist),      # shape: (200, 2)
-            "rewards":   np.array(rews),         # shape: (200,)
-            "drops":     drops,
+            "q_history": np.array(q_hist),
+            "rewards": np.array(rews),
+            "drops": drops,
             "total_reward": sum(rews),
         }
 
-    # --- Print summary ---
-    print("\n" + "=" * 60)
-    print("  BASELINE RESULTS  (lower cost = better)")
-    print("=" * 60)
+    print("\n" + "=" * 65)
+    print("  8-QUEUE MULTI-ROUTER BASELINE BENCHMARKS")
+    print("=" * 65)
     for name, r in results.items():
-        print(f"  {name:30s}  Reward: {r['total_reward']:8.1f}   Drops: {r['drops']:.0f}")
-    print("=" * 60 + "\n")
+        print(f"  {name:25s} | Reward: {r['total_reward']:9.1f} | Packet Drops: {r['drops']:.0f}")
+    print("=" * 65 + "\n")
 
+    # Plot queue trajectories for each baseline
+    fig, axes = plt.subplots(2, 2, figsize=(16, 10), sharey=True)
+    fig.suptitle("Queue Trajectories (8 Queues) in Multi-Router Network", fontsize=15, fontweight="bold")
+    axes = axes.flatten()
 
-    # PLOT: Queue lengths over time for each policy
-
-    fig, axes = plt.subplots(1, 3, figsize=(16, 4.5), sharey=True)
-    fig.suptitle("Queue Lengths Over Time — Baseline Policies", fontsize=14, fontweight="bold")
-
-    colors = {"c-μ Rule (Optimal)": "#2ecc71",
-              "LCQ (Longest Queue)": "#3498db",
-              "Fixed 50/50 Split":   "#e74c3c"}
-
-    for ax, (name, r) in zip(axes, results.items()):
+    for idx, (name, r) in enumerate(results.items()):
+        ax = axes[idx]
         q = r["q_history"]
         timesteps = np.arange(len(q))
 
-        ax.plot(timesteps, q[:, 0], label="Queue 0 (h=3, expensive)", linewidth=1.5, color="#e74c3c", alpha=0.8)
-        ax.plot(timesteps, q[:, 1], label="Queue 1 (h=1, cheap)",     linewidth=1.5, color="#3498db", alpha=0.8)
+        for qi in range(8):
+            ax.plot(timesteps, q[:, qi], label=QUEUE_LABELS[qi], linewidth=1.4, color=QUEUE_COLORS[qi], alpha=0.85)
 
-        ax.set_title(f"{name}\nReward: {r['total_reward']:.0f}", fontsize=11)
-        ax.set_xlabel("Timestep")
-        ax.legend(fontsize=8, loc="upper left")
+        ax.set_title(f"{name} — Total Reward: {r['total_reward']:.0f} (Drops: {r['drops']:.0f})", fontsize=11, fontweight="bold")
+        ax.set_xlabel("Simulation Timestep Slot", fontsize=10)
+        ax.set_ylabel("Queue Length (packets)", fontsize=10)
         ax.grid(True, alpha=0.3)
+        if idx == 0:
+            ax.legend(fontsize=7.5, loc="upper right", ncol=2)
 
-    axes[0].set_ylabel("Queue Length (packets)")
     plt.tight_layout()
-
-    # Save the plot as a file
     plt.savefig("baseline_comparison.png", dpi=150, bbox_inches="tight")
     print("Plot saved to: baseline_comparison.png")
-
-    plt.show()
-    print("Step 1 complete. Check the plot.")
+    print("Baseline evaluation complete.")
