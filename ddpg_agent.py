@@ -16,8 +16,14 @@ class Actor(nn.Module):
             nn.Linear(hidden, hidden),
             nn.ReLU(),
             nn.Linear(hidden, action_dim),
-            nn.Softmax(dim=-1),  # continuous bandwidth weights summing to 1.0
+            nn.Softmax(dim=-1),
         )
+
+        # Prior bias initialization toward standard QoS priority weights
+        prior_logits = torch.tensor([1.8, 1.5, 1.2, 0.9, 0.6, 0.3, 0.0, -0.5])
+        with torch.no_grad():
+            self.network[-2].weight.data.mul_(0.01)
+            self.network[-2].bias.data.copy_(prior_logits)
 
     def forward(self, state):
         return self.network(state)
@@ -45,11 +51,9 @@ class ReplayBuffer:
         self.buffer = deque(maxlen=capacity)
 
     def push(self, state, action, reward, next_state, done):
-        """Store one experience tuple."""
         self.buffer.append((state, action, reward, next_state, done))
 
     def sample(self, batch_size=64):
-        """Randomly pull out a batch of experiences."""
         batch = random.sample(self.buffer, batch_size)
         states, actions, rewards, next_states, dones = zip(*batch)
 
@@ -66,8 +70,7 @@ class ReplayBuffer:
 
 
 class OUNoise:
-    """Ornstein-Uhlenbeck process for temporally correlated exploration in continuous action space."""
-    def __init__(self, action_dim=8, mu=0.0, theta=0.15, sigma=0.2):
+    def __init__(self, action_dim=8, mu=0.0, theta=0.15, sigma=0.15):
         self.action_dim = action_dim
         self.mu = mu
         self.theta = theta
@@ -89,7 +92,7 @@ class DDPGAgent:
         state_dim=8,
         action_dim=8,
         hidden=128,
-        lr_actor=1e-3,
+        lr_actor=3e-4,
         lr_critic=1e-3,
         gamma=0.99,
         tau=0.005,
@@ -102,10 +105,8 @@ class DDPGAgent:
         self.tau = tau
         self.batch_size = batch_size
 
-        # Device selection: use GPU if available
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # Networks
         self.actor = Actor(state_dim, action_dim, hidden).to(self.device)
         self.critic = Critic(state_dim, action_dim, hidden).to(self.device)
         self.actor_target = Actor(state_dim, action_dim, hidden).to(self.device)
@@ -131,11 +132,9 @@ class DDPGAgent:
         if add_noise:
             noise = self.noise.sample() * noise_scale
             action = action + noise
-            # Clip and re-normalize so weights stay strictly positive and sum to 1
-            action = np.clip(action, 0.005, None)
-            action = action / action.sum()
 
-        return action
+        action = np.clip(action, 1e-4, None)
+        return action / action.sum()
 
     def store(self, state, action, reward, next_state, done):
         self.buffer.push(state, action, reward, next_state, done)
@@ -161,6 +160,7 @@ class DDPGAgent:
 
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=5.0)
         self.critic_optimizer.step()
 
         predicted_actions = self.actor(states)
@@ -168,6 +168,7 @@ class DDPGAgent:
 
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=5.0)
         self.actor_optimizer.step()
 
         self._soft_update(self.actor, self.actor_target)

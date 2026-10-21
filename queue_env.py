@@ -1,7 +1,10 @@
 import numpy as np
 
 class Router:
-    """Represents a network router with 8 priority queues on its egress port."""
+    """
+    Represents a network router with 8 priority queues on its egress port.
+    Implements standard work-conserving Weighted Fair Queueing (WFQ).
+    """
     def __init__(self, router_id, n_queues=8, service_rate=3.5, max_queue_len=50, holding_costs=None, drop_costs=None):
         self.router_id = router_id
         self.n_queues = n_queues
@@ -34,22 +37,42 @@ class Router:
         return drops
 
     def service_queues(self, weights):
-        """Service packets according to continuous bandwidth weights summing to 1."""
+        """
+        Work-conserving Weighted Fair Queueing (WFQ):
+        Services packets according to continuous bandwidth weights.
+        If a queue has fewer packets than its allocated quota, unused capacity
+        is redistributed to the remaining backlogged queues.
+        """
         weights = np.array(weights, dtype=np.float64)
-        weights = np.clip(weights, 0.0, None)
-        w_sum = weights.sum()
-        if w_sum > 0:
-            weights = weights / w_sum
-        else:
-            weights = np.ones(self.n_queues) / self.n_queues
+        weights = np.clip(weights, 1e-4, None)
+        
+        served = np.zeros(self.n_queues, dtype=np.float64)
+        remaining_capacity = float(self.service_rate)
+        active_mask = (self.queues > 1e-6)
 
-        service_allocated = weights * self.service_rate
-        actual_served = np.minimum(service_allocated, self.queues)
-        self.queues -= actual_served
-        return actual_served
+        # Redistribute unused capacity over active queues (up to 3 passes)
+        for _ in range(3):
+            if remaining_capacity <= 1e-6 or not active_mask.any():
+                break
+
+            sub_w = weights * active_mask
+            w_sum = sub_w.sum()
+            if w_sum <= 1e-6:
+                sub_w = active_mask.astype(np.float64)
+                w_sum = sub_w.sum()
+            sub_w = sub_w / w_sum
+
+            allocated = sub_w * remaining_capacity
+            actual = np.minimum(allocated, self.queues - served)
+            served += actual
+            remaining_capacity -= actual.sum()
+            active_mask = ((self.queues - served) > 1e-6)
+
+        self.queues -= served
+        return served
 
     def get_cost(self, drops):
-        """Dual-objective reward penalty: r = -(h*q + c*drops)."""
+        """Dual-objective penalty: holding delay + packet loss."""
         holding_penalty = np.sum(self.holding_costs * self.queues)
         drop_penalty = np.sum(self.drop_costs * drops)
         return holding_penalty + drop_penalty
@@ -80,6 +103,7 @@ class QueueEnv:
         episode_length=200,
         burst_prob=0.15,
         burst_scale=2.5,
+        reward_scale=0.01,
     ):
         self.n_queues = n_queues
         self.n_routers = n_routers
@@ -89,12 +113,12 @@ class QueueEnv:
         self.episode_length = episode_length
         self.burst_prob = burst_prob
         self.burst_scale = burst_scale
+        self.reward_scale = reward_scale
 
         # Base arrival rates for 8 traffic classes (VoIP, Video, Web, Bulk, etc.)
         if arrival_rates is not None:
             self.arrival_rates = np.array(arrival_rates, dtype=np.float64)
         else:
-            # Aggregate arrivals ~ 2.6 packets/slot (load factor ~ 0.81 relative to core service_rate 3.2)
             self.arrival_rates = np.array([
                 0.10,  # Q0: Network Control
                 0.20,  # Q1: Voice (EF)
@@ -152,9 +176,8 @@ class QueueEnv:
         return self._get_state()
 
     def _generate_host_traffic(self):
-        """Generates realistic bursty (Poisson + burst) traffic from host nodes."""
+        """Generates bursty non-Poisson traffic from host nodes."""
         rates = self.arrival_rates.copy()
-        # Non-Poisson sudden burst model (as highlighted in Huawei paper)
         if np.random.rand() < self.burst_prob:
             burst_q = np.random.randint(0, self.n_queues)
             rates[burst_q] += np.random.exponential(self.burst_scale)
@@ -167,36 +190,38 @@ class QueueEnv:
         """
         Executes one timestep slot:
         1. Host traffic arrives at Ingress Router 1.
-        2. Router 1 services packets using WFQ baseline (or action).
+        2. Router 1 services packets using WFQ baseline.
         3. Served packets from Router 1 flow into Core Bottleneck Router 2 + cross traffic.
-        4. Core Router 2 services packets according to action weights [w0..w7].
+        4. Core Router 2 services packets according to action weights [w0..w7] using work-conserving WFQ.
         5. Serviced packets leave Core Router 2 to Destination Nodes 3 & 4.
         """
         # 1. Host Arrivals to Router 1
         host_arrivals = self._generate_host_traffic()
         r1_drops = self.router1.receive_packets(host_arrivals)
 
-        # Router 1 default WFQ weights (static fair allocation proportional to priority)
+        # Router 1 static WFQ weights
         r1_weights = np.array([0.22, 0.18, 0.15, 0.13, 0.11, 0.09, 0.07, 0.05])
         r1_served = self.router1.service_queues(r1_weights)
 
         # 2. Router 1 forwarding + cross-traffic arrives at Core Router 2
-        # Cross traffic from Node 2 local burst
         cross_traffic = np.random.poisson(self.arrival_rates * 0.15)
         r2_arrivals = r1_served + cross_traffic
         r2_drops = self.router2.receive_packets(r2_arrivals)
 
-        # 3. Core Router 2 allocates bandwidth according to agent action
+        # 3. Core Router 2 allocates bandwidth using work-conserving WFQ
         r2_served = self.router2.service_queues(action)
 
-        # 4. Total packet drops across the multi-router network
+        # 4. Total packet drops
         step_drops = r1_drops.sum() + r2_drops.sum()
         self.total_drops += step_drops
 
-        # 5. Reward: Little's Law queue delay penalty + packet loss penalty across routers
+        # 5. Dual cost: holding cost + drop cost
         cost_r1 = self.router1.get_cost(r1_drops)
         cost_r2 = self.router2.get_cost(r2_drops)
-        reward = -(cost_r2 + 0.3 * cost_r1)  # Focus primarily on bottleneck router with upstream feedback
+        raw_cost = cost_r2 + 0.3 * cost_r1
+
+        # Scaled reward for stable RL gradients
+        reward = -raw_cost * self.reward_scale
 
         self.step_count += 1
         done = self.step_count >= self.episode_length
@@ -210,6 +235,7 @@ class QueueEnv:
             "r1_drops": r1_drops.sum(),
             "r2_drops": r2_drops.sum(),
             "service": r2_served,
+            "raw_cost": raw_cost,
         }
 
         return self._get_state(), reward, done, info

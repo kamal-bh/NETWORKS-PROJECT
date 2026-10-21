@@ -15,7 +15,6 @@ class SACActorNetwork(nn.Module):
         self.log_std_max = log_std_max
         self.action_dim = action_dim
 
-        # Shared trunk feature extractor
         self.trunk = nn.Sequential(
             nn.Linear(state_dim, hidden),
             nn.ReLU(),
@@ -26,6 +25,14 @@ class SACActorNetwork(nn.Module):
         self.mean_head = nn.Linear(hidden, action_dim)
         self.log_std_head = nn.Linear(hidden, action_dim)
 
+        # Prior bias initialization toward standard QoS priority weights
+        prior_logits = torch.tensor([1.8, 1.5, 1.2, 0.9, 0.6, 0.3, 0.0, -0.5])
+        with torch.no_grad():
+            self.mean_head.weight.data.mul_(0.01)
+            self.mean_head.bias.data.copy_(prior_logits)
+            self.log_std_head.weight.data.mul_(0.01)
+            self.log_std_head.bias.data.fill_(-1.0)
+
     def forward(self, state):
         x = self.trunk(state)
         mean = self.mean_head(x)
@@ -33,20 +40,15 @@ class SACActorNetwork(nn.Module):
         return mean, log_std
 
     def sample(self, state):
-        """
-        Samples continuous weights over the 8-simplex via reparameterized Gaussian
-        projected through Softmax.
-        """
         mean, log_std = self.forward(state)
         std = log_std.exp()
         dist = Normal(mean, std)
         z = dist.rsample()
 
-        # Continuous bandwidth allocation: Softmax guarantees weights in (0, 1) and sum to 1.0
         action = F.softmax(z, dim=-1)
         det_action = F.softmax(mean, dim=-1)
 
-        # Log probability of latent Gaussian sample for entropy regularization
+        # Log prob of Gaussian sample for entropy regularization
         log_prob = dist.log_prob(z).sum(dim=-1, keepdim=True)
 
         return action, log_prob, det_action
@@ -111,11 +113,9 @@ class SACAgent:
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # Actor
         self.actor = SACActorNetwork(state_dim, action_dim, hidden).to(self.device)
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr)
 
-        # Twin Critics & Targets
         self.critic1 = SACCriticNetwork(state_dim, action_dim, hidden).to(self.device)
         self.critic2 = SACCriticNetwork(state_dim, action_dim, hidden).to(self.device)
         self.critic1_target = SACCriticNetwork(state_dim, action_dim, hidden).to(self.device)
@@ -127,9 +127,9 @@ class SACAgent:
         self.c1_optimizer = optim.Adam(self.critic1.parameters(), lr=lr)
         self.c2_optimizer = optim.Adam(self.critic2.parameters(), lr=lr)
 
-        # Target entropy heuristic: -dim(A)
-        self.target_entropy = target_entropy if target_entropy is not None else -float(action_dim)
-        self.log_alpha = torch.tensor(0.0, requires_grad=True, device=self.device)
+        # Target entropy: standard heuristic
+        self.target_entropy = target_entropy if target_entropy is not None else -float(action_dim) * 0.5
+        self.log_alpha = torch.tensor(-1.0, requires_grad=True, device=self.device)
         self.alpha = self.log_alpha.exp().item()
         self.alpha_optimizer = optim.Adam([self.log_alpha], lr=lr)
 
@@ -145,7 +145,7 @@ class SACAgent:
             else:
                 act = action.squeeze(0).cpu().numpy()
 
-        act = np.clip(act, 0.005, None)
+        act = np.clip(act, 1e-4, None)
         return act / act.sum()
 
     def store(self, state, action, reward, next_state, done):
@@ -169,20 +169,23 @@ class SACAgent:
             q_next = torch.min(q1_next, q2_next)
             target_q = rewards + self.gamma * (1 - dones) * (q_next - self.alpha * next_log_probs)
 
-        # Critic updates
+        # Critic 1
         q1_pred = self.critic1(states, actions)
         c1_loss = F.mse_loss(q1_pred, target_q)
         self.c1_optimizer.zero_grad()
         c1_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.critic1.parameters(), max_norm=5.0)
         self.c1_optimizer.step()
 
+        # Critic 2
         q2_pred = self.critic2(states, actions)
         c2_loss = F.mse_loss(q2_pred, target_q)
         self.c2_optimizer.zero_grad()
         c2_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.critic2.parameters(), max_norm=5.0)
         self.c2_optimizer.step()
 
-        # Actor update
+        # Actor
         new_actions, log_probs, _ = self.actor.sample(states)
         q1_new = self.critic1(states, new_actions)
         q2_new = self.critic2(states, new_actions)
@@ -191,16 +194,21 @@ class SACAgent:
 
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=5.0)
         self.actor_optimizer.step()
 
-        # Alpha temperature update
+        # Alpha temperature
         alpha_loss = -(self.log_alpha * (log_probs + self.target_entropy).detach()).mean()
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()
+        torch.nn.utils.clip_grad_norm_([self.log_alpha], max_norm=2.0)
         self.alpha_optimizer.step()
-        self.alpha = self.log_alpha.exp().item()
 
-        # Target network soft updates
+        # Clamp log_alpha so temperature stays healthy
+        with torch.no_grad():
+            self.log_alpha.clamp_(-4.0, 1.0)
+            self.alpha = self.log_alpha.exp().item()
+
         self._soft_update(self.critic1, self.critic1_target)
         self._soft_update(self.critic2, self.critic2_target)
 
