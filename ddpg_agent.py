@@ -133,7 +133,8 @@ class DDPGAgent:
             noise = self.noise.sample() * noise_scale
             action = action + noise
 
-        action = np.clip(action, 1e-4, None)
+        # Ensure minimal floor bandwidth (1.5%) so low-priority queues never starve on bursts
+        action = np.clip(action, 0.015, None)
         return action / action.sum()
 
     def store(self, state, action, reward, next_state, done):
@@ -182,3 +183,24 @@ class DDPGAgent:
     def _soft_update(self, source, target):
         for src_param, tgt_param in zip(source.parameters(), target.parameters()):
             tgt_param.data.copy_(self.tau * src_param.data + (1 - self.tau) * tgt_param.data)
+
+    def save(self, filepath="ddpg_checkpoint.pth"):
+        """Save model weights to disk."""
+        torch.save({
+            "actor": self.actor.state_dict(),
+            "critic": self.critic.state_dict(),
+            "actor_target": self.actor_target.state_dict(),
+            "critic_target": self.critic_target.state_dict(),
+        }, filepath)
+
+    def load(self, filepath="ddpg_checkpoint.pth"):
+        """Load model weights from disk if file exists."""
+        import os
+        if os.path.exists(filepath):
+            checkpoint = torch.load(filepath, map_location=self.device)
+            self.actor.load_state_dict(checkpoint["actor"])
+            self.critic.load_state_dict(checkpoint["critic"])
+            self.actor_target.load_state_dict(checkpoint["actor_target"])
+            self.critic_target.load_state_dict(checkpoint["critic_target"])
+            return True
+        return False

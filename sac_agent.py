@@ -31,7 +31,7 @@ class SACActorNetwork(nn.Module):
             self.mean_head.weight.data.mul_(0.01)
             self.mean_head.bias.data.copy_(prior_logits)
             self.log_std_head.weight.data.mul_(0.01)
-            self.log_std_head.bias.data.fill_(-1.0)
+            self.log_std_head.bias.data.fill_(-2.0)
 
     def forward(self, state):
         x = self.trunk(state)
@@ -127,11 +127,12 @@ class SACAgent:
         self.c1_optimizer = optim.Adam(self.critic1.parameters(), lr=lr)
         self.c2_optimizer = optim.Adam(self.critic2.parameters(), lr=lr)
 
-        # Target entropy: standard heuristic
-        self.target_entropy = target_entropy if target_entropy is not None else -float(action_dim) * 0.5
-        self.log_alpha = torch.tensor(-1.0, requires_grad=True, device=self.device)
+        # Target entropy: calibrated for continuous bounded QoS weights
+        self.target_entropy = target_entropy if target_entropy is not None else -float(action_dim)
+        # Initialize alpha to ~0.03 to balance with the scaled environment step rewards (~ -0.35)
+        self.log_alpha = torch.tensor(-3.5, requires_grad=True, device=self.device)
         self.alpha = self.log_alpha.exp().item()
-        self.alpha_optimizer = optim.Adam([self.log_alpha], lr=lr)
+        self.alpha_optimizer = optim.Adam([self.log_alpha], lr=lr * 0.5)
 
         self.buffer = SACReplayBuffer(buffer_capacity)
 
@@ -145,7 +146,8 @@ class SACAgent:
             else:
                 act = action.squeeze(0).cpu().numpy()
 
-        act = np.clip(act, 1e-4, None)
+        # Ensure minimal floor bandwidth (1.5%) so low-priority queues never starve on bursts
+        act = np.clip(act, 0.015, None)
         return act / act.sum()
 
     def store(self, state, action, reward, next_state, done):
@@ -204,9 +206,9 @@ class SACAgent:
         torch.nn.utils.clip_grad_norm_([self.log_alpha], max_norm=2.0)
         self.alpha_optimizer.step()
 
-        # Clamp log_alpha so temperature stays healthy
+        # Clamp log_alpha so temperature stays well-balanced with reward scale
         with torch.no_grad():
-            self.log_alpha.clamp_(-4.0, 1.0)
+            self.log_alpha.clamp_(-6.0, -2.0)
             self.alpha = self.log_alpha.exp().item()
 
         self._soft_update(self.critic1, self.critic1_target)
@@ -217,3 +219,30 @@ class SACAgent:
     def _soft_update(self, source, target):
         for s_p, t_p in zip(source.parameters(), target.parameters()):
             t_p.data.copy_(self.tau * s_p.data + (1 - self.tau) * t_p.data)
+
+    def save(self, filepath="sac_checkpoint.pth"):
+        """Save model weights to disk."""
+        torch.save({
+            "actor": self.actor.state_dict(),
+            "critic1": self.critic1.state_dict(),
+            "critic2": self.critic2.state_dict(),
+            "critic1_target": self.critic1_target.state_dict(),
+            "critic2_target": self.critic2_target.state_dict(),
+            "log_alpha": self.log_alpha.data,
+        }, filepath)
+
+    def load(self, filepath="sac_checkpoint.pth"):
+        """Load model weights from disk if file exists."""
+        import os
+        if os.path.exists(filepath):
+            checkpoint = torch.load(filepath, map_location=self.device)
+            self.actor.load_state_dict(checkpoint["actor"])
+            self.critic1.load_state_dict(checkpoint["critic1"])
+            self.critic2.load_state_dict(checkpoint["critic2"])
+            self.critic1_target.load_state_dict(checkpoint["critic1_target"])
+            self.critic2_target.load_state_dict(checkpoint["critic2_target"])
+            if "log_alpha" in checkpoint:
+                self.log_alpha.data.copy_(checkpoint["log_alpha"])
+                self.alpha = self.log_alpha.exp().item()
+            return True
+        return False

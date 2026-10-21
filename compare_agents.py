@@ -7,7 +7,7 @@ from ddpg_agent import DDPGAgent
 from sac_agent  import SACAgent
 
 EPISODE_LENGTH = 200    # timesteps per episode
-NUM_EPISODES   = 250    # training episodes
+NUM_EPISODES   = 350    # training episodes
 EVAL_SEEDS     = 5      # seeds to average over during evaluation
 SMOOTH_WINDOW  = 20     # rolling average window for the plot
 N_QUEUES       = 8
@@ -165,18 +165,30 @@ print("=" * 65)
 print(f"  PHASE 2: Training DDPG Agent ({NUM_EPISODES} episodes, 8 queues)...")
 print("=" * 65)
 ddpg = DDPGAgent(state_dim=N_QUEUES, action_dim=N_QUEUES, hidden=128)
+if ddpg.load("ddpg_checkpoint.pth"):
+    print("  ✓ Loaded existing DDPG checkpoint (continuing training)...")
+else:
+    print("  ○ Training DDPG from scratch...")
 ddpg_rewards = train_ddpg(ddpg)
+ddpg.save("ddpg_checkpoint.pth")
 ddpg_eval_r, ddpg_eval_q, ddpg_eval_d = evaluate_agent(ddpg, "ddpg")
 print(f"  ✓ DDPG final avg reward: {ddpg_eval_r:.1f} | drops: {ddpg_eval_d:.0f}")
+print("  ✓ Saved updated DDPG weights to ddpg_checkpoint.pth")
 print()
 
 print("=" * 65)
 print(f"  PHASE 3: Training SAC Agent ({NUM_EPISODES} episodes, 8 queues)...")
 print("=" * 65)
 sac = SACAgent(state_dim=N_QUEUES, action_dim=N_QUEUES, hidden=128)
+if sac.load("sac_checkpoint.pth"):
+    print("  ✓ Loaded existing SAC checkpoint (continuing training)...")
+else:
+    print("  ○ Training SAC from scratch...")
 sac_rewards = train_sac(sac)
+sac.save("sac_checkpoint.pth")
 sac_eval_r, sac_eval_q, sac_eval_d = evaluate_agent(sac, "sac")
 print(f"  ✓ SAC final avg reward: {sac_eval_r:.1f} | drops: {sac_eval_d:.0f}")
+print("  ✓ Saved updated SAC weights to sac_checkpoint.pth")
 print()
 
 print("=" * 65)

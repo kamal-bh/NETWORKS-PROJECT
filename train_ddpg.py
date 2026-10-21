@@ -61,6 +61,10 @@ NOISE_DECAY     = 0.995
 MIN_NOISE       = 0.05
 
 agent = DDPGAgent(state_dim=8, action_dim=8, hidden=128)
+if agent.load("ddpg_checkpoint.pth"):
+    print("  ✓ Loaded existing checkpoint from ddpg_checkpoint.pth (continuing training)...")
+else:
+    print("  ○ Training DDPG from scratch...")
 env   = QueueEnv(n_queues=8, episode_length=EPISODE_LENGTH)
 
 episode_rewards = []
@@ -91,6 +95,9 @@ for episode in range(NUM_EPISODES):
         print(f"  Episode {episode+1:3d}/{NUM_EPISODES} | "
               f"Last-25 avg reward: {recent_avg:8.1f} | "
               f"Noise scale: {noise_scale:.3f}")
+
+agent.save("ddpg_checkpoint.pth")
+print("  ✓ Saved updated DDPG weights to ddpg_checkpoint.pth")
 
 
 # STEP 3: Evaluate the trained agent

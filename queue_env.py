@@ -18,7 +18,7 @@ class Router:
         ], dtype=np.float64)
         
         self.drop_costs = drop_costs if drop_costs is not None else np.array([
-            25.0, 20.0, 15.0, 10.0, 8.0, 5.0, 2.5, 1.0
+            50.0, 40.0, 30.0, 25.0, 20.0, 18.0, 15.0, 12.0
         ], dtype=np.float64)
 
         self.queues = np.zeros(n_queues, dtype=np.float64)
@@ -72,10 +72,11 @@ class Router:
         return served
 
     def get_cost(self, drops):
-        """Dual-objective penalty: holding delay + packet loss."""
+        """Dual-objective penalty: holding delay + packet loss + buffer overflow warning."""
         holding_penalty = np.sum(self.holding_costs * self.queues)
         drop_penalty = np.sum(self.drop_costs * drops)
-        return holding_penalty + drop_penalty
+        buffer_warning = np.sum(np.maximum(self.queues - 0.75 * self.max_queue_len, 0.0) * 2.0)
+        return holding_penalty + drop_penalty + buffer_warning
 
 
 class QueueEnv:
@@ -140,7 +141,7 @@ class QueueEnv:
         if drop_costs is not None:
             self.drop_costs = np.array(drop_costs, dtype=np.float64)
         else:
-            self.drop_costs = np.array([25.0, 20.0, 15.0, 10.0, 8.0, 5.0, 2.5, 1.0], dtype=np.float64)
+            self.drop_costs = np.array([50.0, 40.0, 30.0, 25.0, 20.0, 18.0, 15.0, 12.0], dtype=np.float64)
 
         # Routers in tandem/bottleneck topology
         self.router1 = Router(
