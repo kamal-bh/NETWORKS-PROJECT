@@ -191,14 +191,18 @@ class DDPGAgent:
             "critic_target": self.critic_target.state_dict(),
         }, filepath)
 
-    def load(self, filepath="ddpg_checkpoint.pth"):
+    def load(self, filepath="checkpoint_ddpg.pth"):
         """Load model weights from disk if file exists."""
         import os
-        if os.path.exists(filepath):
-            checkpoint = torch.load(filepath, map_location=self.device)
-            self.actor.load_state_dict(checkpoint["actor"])
-            self.critic.load_state_dict(checkpoint["critic"])
-            self.actor_target.load_state_dict(checkpoint["actor_target"])
-            self.critic_target.load_state_dict(checkpoint["critic_target"])
-            return True
-        return False
+        if not os.path.exists(filepath):
+            alt = "ddpg_checkpoint.pth" if filepath == "checkpoint_ddpg.pth" else "checkpoint_ddpg.pth"
+            if os.path.exists(alt):
+                filepath = alt
+            else:
+                return False
+        checkpoint = torch.load(filepath, map_location=self.device)
+        self.actor.load_state_dict(checkpoint["actor"])
+        self.critic.load_state_dict(checkpoint["critic"])
+        self.actor_target.load_state_dict(checkpoint["actor_target"])
+        self.critic_target.load_state_dict(checkpoint["critic_target"])
+        return True

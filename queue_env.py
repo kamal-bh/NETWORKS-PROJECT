@@ -175,6 +175,7 @@ class QueueEnv:
         burst_prob=0.15,
         burst_scale=2.5,
         reward_scale=0.01,
+        traffic_fn=None,
     ):
         self.n_queues = n_queues
         self.n_routers = n_routers
@@ -185,6 +186,7 @@ class QueueEnv:
         self.burst_prob = burst_prob
         self.burst_scale = burst_scale
         self.reward_scale = reward_scale
+        self.traffic_fn = traffic_fn
 
         # Base arrival rates for 8 traffic classes (VoIP, Video, Web, Bulk, etc.)
         if arrival_rates is not None:
@@ -256,6 +258,9 @@ class QueueEnv:
         5. Bursty (Q3, Q4)
         Plus baseline Network Control (Q0) and Best Effort (Q6).
         """
+        if self.traffic_fn is not None:
+            return self.traffic_fn(self)
+
         arrivals = np.zeros(self.n_queues, dtype=np.float64)
 
         # 1. Voice traffic (Q1 - Voice EF)
@@ -336,6 +341,7 @@ class QueueEnv:
             "drops": step_drops,
             "r1_drops": r1_drops.sum(),
             "r2_drops": r2_drops.sum(),
+            "per_queue_drops": r1_drops + r2_drops,
             "service": r2_served,
             "raw_cost": raw_cost,
         }

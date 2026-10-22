@@ -235,18 +235,22 @@ class SACAgent:
             "log_alpha": self.log_alpha.data,
         }, filepath)
 
-    def load(self, filepath="sac_checkpoint.pth"):
+    def load(self, filepath="checkpoint_sac.pth"):
         """Load model weights from disk if file exists."""
         import os
-        if os.path.exists(filepath):
-            checkpoint = torch.load(filepath, map_location=self.device)
-            self.actor.load_state_dict(checkpoint["actor"])
-            self.critic1.load_state_dict(checkpoint["critic1"])
-            self.critic2.load_state_dict(checkpoint["critic2"])
-            self.critic1_target.load_state_dict(checkpoint["critic1_target"])
-            self.critic2_target.load_state_dict(checkpoint["critic2_target"])
-            if "log_alpha" in checkpoint:
-                self.log_alpha.data.copy_(checkpoint["log_alpha"])
-                self.alpha = self.log_alpha.exp().item()
-            return True
-        return False
+        if not os.path.exists(filepath):
+            alt = "sac_checkpoint.pth" if filepath == "checkpoint_sac.pth" else "checkpoint_sac.pth"
+            if os.path.exists(alt):
+                filepath = alt
+            else:
+                return False
+        checkpoint = torch.load(filepath, map_location=self.device)
+        self.actor.load_state_dict(checkpoint["actor"])
+        self.critic1.load_state_dict(checkpoint["critic1"])
+        self.critic2.load_state_dict(checkpoint["critic2"])
+        self.critic1_target.load_state_dict(checkpoint["critic1_target"])
+        self.critic2_target.load_state_dict(checkpoint["critic2_target"])
+        if "log_alpha" in checkpoint:
+            self.log_alpha.data.copy_(checkpoint["log_alpha"])
+            self.alpha = self.log_alpha.exp().item()
+        return True

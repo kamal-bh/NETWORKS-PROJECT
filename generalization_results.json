@@ -1,0 +1,782 @@
+{
+  "Train_1_Balanced_Standard": {
+    "split": "train",
+    "id": 1,
+    "policies": {
+      "SAC (RL)": {
+        "throughput": 3.038535556877092,
+        "total_served": 607.7071113754184,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 3.979717407575736,
+        "avg_queue_backlog": 10.89060683556173,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9992678678970813,
+        "total_penalty_cost": 2868.517318712992,
+        "reward": -28.685173187129926
+      },
+      "DDPG (RL)": {
+        "throughput": 3.0383901004341873,
+        "total_served": 607.6780200868374,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 3.9784536522650753,
+        "avg_queue_backlog": 10.88815056286273,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.999981142051945,
+        "total_penalty_cost": 3748.16274243885,
+        "reward": -37.4816274243885
+      },
+      "Static WFQ": {
+        "throughput": 3.0387999999999997,
+        "total_served": 607.76,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 3.9608614053494384,
+        "avg_queue_backlog": 10.838697872340418,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9999861265574579,
+        "total_penalty_cost": 3963.8447168313555,
+        "reward": -39.638447168313554
+      },
+      "c-\u03bc Rule": {
+        "throughput": 3.0383670931840627,
+        "total_served": 607.6734186368125,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 3.965749403357067,
+        "avg_queue_backlog": 10.851880951300949,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9999864895998435,
+        "total_penalty_cost": 4125.527783336656,
+        "reward": -41.25527783336656
+      },
+      "Strict PQ": {
+        "throughput": 3.0383670931840627,
+        "total_served": 607.6734186368125,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 3.965749403357067,
+        "avg_queue_backlog": 10.851880951300949,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9999864895998435,
+        "total_penalty_cost": 4125.527783336656,
+        "reward": -41.25527783336656
+      },
+      "LCQ Rule": {
+        "throughput": 3.0387630866531152,
+        "total_served": 607.752617330623,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 3.9630310461425453,
+        "avg_queue_backlog": 10.84490381801294,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 1.0,
+        "total_penalty_cost": 8846.368543263754,
+        "reward": -88.46368543263752
+      }
+    }
+  },
+  "Train_2_Multimedia_Heavy": {
+    "split": "train",
+    "id": 2,
+    "policies": {
+      "SAC (RL)": {
+        "throughput": 3.161195229046142,
+        "total_served": 632.2390458092284,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 9.861049498279614,
+        "avg_queue_backlog": 30.067285708161887,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9761235978089571,
+        "total_penalty_cost": 12120.048710820116,
+        "reward": -121.20048710820114
+      },
+      "DDPG (RL)": {
+        "throughput": 3.160777748344536,
+        "total_served": 632.1555496689073,
+        "packet_loss_count": 0.4075927797453204,
+        "packet_loss_rate": 0.0006092567709197614,
+        "avg_queue_delay": 9.867145035123386,
+        "avg_queue_backlog": 30.08650013326915,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9838293906314721,
+        "total_penalty_cost": 12170.173828226843,
+        "reward": -121.70173828226844
+      },
+      "Static WFQ": {
+        "throughput": 3.16119793905441,
+        "total_served": 632.2395878108819,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 9.86111595038185,
+        "avg_queue_backlog": 30.06747542891377,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9967603703193249,
+        "total_penalty_cost": 18744.07475625261,
+        "reward": -187.44074756252607
+      },
+      "c-\u03bc Rule": {
+        "throughput": 3.160907799104713,
+        "total_served": 632.1815598209427,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 9.876652850722364,
+        "avg_queue_backlog": 30.111678304894106,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9926012231087222,
+        "total_penalty_cost": 15956.703631710765,
+        "reward": -159.56703631710764
+      },
+      "Strict PQ": {
+        "throughput": 3.160907799104713,
+        "total_served": 632.1815598209427,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 9.876652850722364,
+        "avg_queue_backlog": 30.111678304894106,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9926012231087222,
+        "total_penalty_cost": 15956.703631710765,
+        "reward": -159.56703631710764
+      },
+      "LCQ Rule": {
+        "throughput": 3.1611194444444446,
+        "total_served": 632.223888888889,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 9.86698766017923,
+        "avg_queue_backlog": 30.084179728633682,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9907112780841582,
+        "total_penalty_cost": 26048.581775045102,
+        "reward": -260.485817750451
+      }
+    }
+  },
+  "Train_3_Web_Transactional": {
+    "split": "train",
+    "id": 3,
+    "policies": {
+      "SAC (RL)": {
+        "throughput": 3.1426,
+        "total_served": 628.5200000000001,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 7.368062422237509,
+        "avg_queue_backlog": 21.935909636729054,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9943107649137982,
+        "total_penalty_cost": 6726.181989123147,
+        "reward": -67.2618198912315
+      },
+      "DDPG (RL)": {
+        "throughput": 3.1421797346964935,
+        "total_served": 628.4359469392987,
+        "packet_loss_count": 5.957253652584891,
+        "packet_loss_rate": 0.009743465218994028,
+        "avg_queue_delay": 6.889521128836989,
+        "avg_queue_backlog": 20.476533468861813,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9989933599282896,
+        "total_penalty_cost": 8876.92573416604,
+        "reward": -88.76925734166039
+      },
+      "Static WFQ": {
+        "throughput": 3.1426,
+        "total_served": 628.5199999999999,
+        "packet_loss_count": 5.309898049254007,
+        "packet_loss_rate": 0.00868682208569998,
+        "avg_queue_delay": 6.956585021965592,
+        "avg_queue_backlog": 20.681578122431368,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9990941372306915,
+        "total_penalty_cost": 9258.630091885392,
+        "reward": -92.58630091885394
+      },
+      "c-\u03bc Rule": {
+        "throughput": 3.1424090286495536,
+        "total_served": 628.4818057299108,
+        "packet_loss_count": 2.99033257114296,
+        "packet_loss_rate": 0.004879460211663402,
+        "avg_queue_delay": 7.205350897485724,
+        "avg_queue_backlog": 21.43787568925172,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9994796168602373,
+        "total_penalty_cost": 9013.401616673076,
+        "reward": -90.13401616673077
+      },
+      "Strict PQ": {
+        "throughput": 3.1424090286495536,
+        "total_served": 628.4818057299108,
+        "packet_loss_count": 2.99033257114296,
+        "packet_loss_rate": 0.004879460211663402,
+        "avg_queue_delay": 7.205350897485724,
+        "avg_queue_backlog": 21.43787568925172,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9994796168602373,
+        "total_penalty_cost": 9013.401616673076,
+        "reward": -90.13401616673077
+      },
+      "LCQ Rule": {
+        "throughput": 3.1426,
+        "total_served": 628.5199999999999,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 7.367662524561913,
+        "avg_queue_backlog": 21.934785416666678,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9973029060902213,
+        "total_penalty_cost": 17695.818020497696,
+        "reward": -176.95818020497697
+      }
+    }
+  },
+  "Train_4_Bulk_Transfer_Saturation": {
+    "split": "train",
+    "id": 4,
+    "policies": {
+      "SAC (RL)": {
+        "throughput": 3.142311341835602,
+        "total_served": 628.4622683671203,
+        "packet_loss_count": 8.370926319696604,
+        "packet_loss_rate": 0.012328315640201187,
+        "avg_queue_delay": 9.012319358748215,
+        "avg_queue_backlog": 28.201613095642493,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9935744197121632,
+        "total_penalty_cost": 5587.417970993978,
+        "reward": -55.87417970993979
+      },
+      "DDPG (RL)": {
+        "throughput": 3.1424691715883846,
+        "total_served": 628.4938343176769,
+        "packet_loss_count": 7.254368901179032,
+        "packet_loss_rate": 0.010683901179939665,
+        "avg_queue_delay": 9.13685884652985,
+        "avg_queue_backlog": 28.62208298612877,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9949983929660211,
+        "total_penalty_cost": 5931.708598317012,
+        "reward": -59.317085983170124
+      },
+      "Static WFQ": {
+        "throughput": 3.1426830285859575,
+        "total_served": 628.5366057171915,
+        "packet_loss_count": 7.4410863481436476,
+        "packet_loss_rate": 0.010958890056176212,
+        "avg_queue_delay": 9.179468059114402,
+        "avg_queue_backlog": 28.76867672543394,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9944108576757298,
+        "total_penalty_cost": 5963.5245871204515,
+        "reward": -59.63524587120452
+      },
+      "c-\u03bc Rule": {
+        "throughput": 3.142352515130713,
+        "total_served": 628.4705030261426,
+        "packet_loss_count": 7.120618291112486,
+        "packet_loss_rate": 0.010486919427264338,
+        "avg_queue_delay": 9.252778992364476,
+        "avg_queue_backlog": 29.010036344410498,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9940545008542824,
+        "total_penalty_cost": 6137.553723613294,
+        "reward": -61.375537236132935
+      },
+      "Strict PQ": {
+        "throughput": 3.142352515130713,
+        "total_served": 628.4705030261426,
+        "packet_loss_count": 7.120618291112486,
+        "packet_loss_rate": 0.010486919427264338,
+        "avg_queue_delay": 9.252778992364476,
+        "avg_queue_backlog": 29.010036344410498,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9940545008542824,
+        "total_penalty_cost": 6137.553723613294,
+        "reward": -61.375537236132935
+      },
+      "LCQ Rule": {
+        "throughput": 3.1428000000000003,
+        "total_served": 628.5600000000001,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 9.592269735416043,
+        "avg_queue_backlog": 30.17250000000002,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9793053591466607,
+        "total_penalty_cost": 23565.370668644733,
+        "reward": -235.65370668644732
+      }
+    }
+  },
+  "Train_5_Flash_Crowd_Bursts": {
+    "split": "train",
+    "id": 5,
+    "policies": {
+      "SAC (RL)": {
+        "throughput": 3.1734530637084744,
+        "total_served": 634.6906127416947,
+        "packet_loss_count": 23.719357241073293,
+        "packet_loss_rate": 0.03157446075607291,
+        "avg_queue_delay": 21.74650248217666,
+        "avg_queue_backlog": 81.42332058710095,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9240940301133496,
+        "total_penalty_cost": 34268.97893782887,
+        "reward": -342.68978937828876
+      },
+      "DDPG (RL)": {
+        "throughput": 3.173377032503029,
+        "total_served": 634.6754065006058,
+        "packet_loss_count": 22.27574667586773,
+        "packet_loss_rate": 0.02907763575621286,
+        "avg_queue_delay": 22.02148902869815,
+        "avg_queue_backlog": 82.40574750112651,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9563514168430306,
+        "total_penalty_cost": 30926.36395437026,
+        "reward": -309.26363954370265
+      },
+      "Static WFQ": {
+        "throughput": 3.1736,
+        "total_served": 634.72,
+        "packet_loss_count": 48.17663273807741,
+        "packet_loss_rate": 0.06407942273233146,
+        "avg_queue_delay": 20.268941469146824,
+        "avg_queue_backlog": 75.88928559384625,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9791666825309593,
+        "total_penalty_cost": 45538.913444113605,
+        "reward": -455.38913444113604
+      },
+      "c-\u03bc Rule": {
+        "throughput": 3.1736,
+        "total_served": 634.72,
+        "packet_loss_count": 20.5822309292703,
+        "packet_loss_rate": 0.026841162161870304,
+        "avg_queue_delay": 21.887269164623856,
+        "avg_queue_backlog": 81.88438767211426,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.950014592566055,
+        "total_penalty_cost": 34043.309502249125,
+        "reward": -340.4330950224913
+      },
+      "Strict PQ": {
+        "throughput": 3.1736,
+        "total_served": 634.72,
+        "packet_loss_count": 20.5822309292703,
+        "packet_loss_rate": 0.026841162161870304,
+        "avg_queue_delay": 21.887269164623856,
+        "avg_queue_backlog": 81.88438767211426,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.950014592566055,
+        "total_penalty_cost": 34043.309502249125,
+        "reward": -340.4330950224913
+      },
+      "LCQ Rule": {
+        "throughput": 3.1736,
+        "total_served": 634.72,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 22.493996872937352,
+        "avg_queue_backlog": 84.21536962025321,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9034942121358049,
+        "total_penalty_cost": 69936.89364942303,
+        "reward": -699.3689364942302
+      }
+    }
+  },
+  "Test_1_Extreme_Overload": {
+    "split": "test",
+    "id": 6,
+    "policies": {
+      "SAC (RL)": {
+        "throughput": 3.1948,
+        "total_served": 638.96,
+        "packet_loss_count": 77.87804181043325,
+        "packet_loss_rate": 0.09049142428817944,
+        "avg_queue_delay": 27.9036200270414,
+        "avg_queue_backlog": 120.16189404858626,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.8514782792352784,
+        "total_penalty_cost": 52164.12313453541,
+        "reward": -521.6412313453541
+      },
+      "DDPG (RL)": {
+        "throughput": 3.1935522920163484,
+        "total_served": 638.7104584032697,
+        "packet_loss_count": 113.86965336191511,
+        "packet_loss_rate": 0.13215588620379223,
+        "avg_queue_delay": 26.09562775610281,
+        "avg_queue_backlog": 112.36364315116191,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.8906098360608159,
+        "total_penalty_cost": 53459.33546225728,
+        "reward": -534.5933546225729
+      },
+      "Static WFQ": {
+        "throughput": 3.1948,
+        "total_served": 638.96,
+        "packet_loss_count": 78.99482121651882,
+        "packet_loss_rate": 0.09189135548599776,
+        "avg_queue_delay": 28.942483280921827,
+        "avg_queue_backlog": 124.67881652050377,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9192039871846573,
+        "total_penalty_cost": 63507.80754192843,
+        "reward": -635.0780754192843
+      },
+      "c-\u03bc Rule": {
+        "throughput": 3.1947901149105578,
+        "total_served": 638.9580229821115,
+        "packet_loss_count": 114.0452972080086,
+        "packet_loss_rate": 0.1322718057771467,
+        "avg_queue_delay": 26.003607215517015,
+        "avg_queue_backlog": 111.95660207143496,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.887173311606051,
+        "total_penalty_cost": 54994.806228049405,
+        "reward": -549.9480622804941
+      },
+      "Strict PQ": {
+        "throughput": 3.1947901149105578,
+        "total_served": 638.9580229821115,
+        "packet_loss_count": 114.0452972080086,
+        "packet_loss_rate": 0.1322718057771467,
+        "avg_queue_delay": 26.003607215517015,
+        "avg_queue_backlog": 111.95660207143496,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.887173311606051,
+        "total_penalty_cost": 54994.806228049405,
+        "reward": -549.9480622804941
+      },
+      "LCQ Rule": {
+        "throughput": 3.1948,
+        "total_served": 638.96,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 31.948759404377334,
+        "avg_queue_backlog": 137.60797902730323,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9333458784645318,
+        "total_penalty_cost": 120060.43988497299,
+        "reward": -1200.60439884973
+      }
+    }
+  },
+  "Test_2_Emergency_VoIP_Surge": {
+    "split": "test",
+    "id": 7,
+    "policies": {
+      "SAC (RL)": {
+        "throughput": 3.114063487359034,
+        "total_served": 622.8126974718068,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 4.820531829143811,
+        "avg_queue_backlog": 13.911979314861181,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9932944318726655,
+        "total_penalty_cost": 9724.779248095216,
+        "reward": -97.24779248095216
+      },
+      "DDPG (RL)": {
+        "throughput": 3.114172332899802,
+        "total_served": 622.8344665799603,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 4.828861448709315,
+        "avg_queue_backlog": 13.93669531783191,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.994506696735548,
+        "total_penalty_cost": 9252.35484276046,
+        "reward": -92.52354842760461
+      },
+      "Static WFQ": {
+        "throughput": 3.1144000000000003,
+        "total_served": 622.88,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 4.8201058253609,
+        "avg_queue_backlog": 13.910776577748852,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.999928338845114,
+        "total_penalty_cost": 15266.381451212179,
+        "reward": -152.66381451212177
+      },
+      "c-\u03bc Rule": {
+        "throughput": 3.1143885341941653,
+        "total_served": 622.8777068388331,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 4.823518880026385,
+        "avg_queue_backlog": 13.920312987691641,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9982312770453408,
+        "total_penalty_cost": 9624.083063367729,
+        "reward": -96.24083063367729
+      },
+      "Strict PQ": {
+        "throughput": 3.1143885341941653,
+        "total_served": 622.8777068388331,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 4.823518880026385,
+        "avg_queue_backlog": 13.920312987691641,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9982312770453408,
+        "total_penalty_cost": 9624.083063367729,
+        "reward": -96.24083063367729
+      },
+      "LCQ Rule": {
+        "throughput": 3.1144000000000003,
+        "total_served": 622.88,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 4.820821691802274,
+        "avg_queue_backlog": 13.912829427809337,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9997742077977912,
+        "total_penalty_cost": 14157.212815385672,
+        "reward": -141.5721281538567
+      }
+    }
+  },
+  "Test_3_Off_Peak_Quiet": {
+    "split": "test",
+    "id": 8,
+    "policies": {
+      "SAC (RL)": {
+        "throughput": 1.5582,
+        "total_served": 311.64,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 0.08634715235780405,
+        "avg_queue_backlog": 0.12506572067521407,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9999999999999998,
+        "total_penalty_cost": 51.78644970389962,
+        "reward": -0.5178644970389963
+      },
+      "DDPG (RL)": {
+        "throughput": 1.5582,
+        "total_served": 311.64,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 0.08662714972250754,
+        "avg_queue_backlog": 0.12548876175661536,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9999999999999998,
+        "total_penalty_cost": 60.1900121512856,
+        "reward": -0.6019001215128561
+      },
+      "Static WFQ": {
+        "throughput": 1.5582,
+        "total_served": 311.64,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 0.08617090830200073,
+        "avg_queue_backlog": 0.12480246913580242,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9999999999999998,
+        "total_penalty_cost": 61.14918020802909,
+        "reward": -0.6114918020802909
+      },
+      "c-\u03bc Rule": {
+        "throughput": 1.5582,
+        "total_served": 311.64,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 0.08658676174837628,
+        "avg_queue_backlog": 0.12542113586730333,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9999999999999998,
+        "total_penalty_cost": 83.74855543841635,
+        "reward": -0.8374855543841633
+      },
+      "Strict PQ": {
+        "throughput": 1.5582,
+        "total_served": 311.64,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 0.08658676174837628,
+        "avg_queue_backlog": 0.12542113586730333,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9999999999999998,
+        "total_penalty_cost": 83.74855543841635,
+        "reward": -0.8374855543841633
+      },
+      "LCQ Rule": {
+        "throughput": 1.5582,
+        "total_served": 311.64,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 0.08647750322682637,
+        "avg_queue_backlog": 0.12526014740963304,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9999999999999998,
+        "total_penalty_cost": 87.37413501556651,
+        "reward": -0.873741350155665
+      }
+    }
+  },
+  "Test_4_Periodic_Shock_Pulses": {
+    "split": "test",
+    "id": 9,
+    "policies": {
+      "SAC (RL)": {
+        "throughput": 3.0608,
+        "total_served": 612.1600000000001,
+        "packet_loss_count": 27.205359294003223,
+        "packet_loss_rate": 0.040842781223691685,
+        "avg_queue_delay": 17.080002157920568,
+        "avg_queue_backlog": 56.844668939858096,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9331865560811778,
+        "total_penalty_cost": 20555.371514483682,
+        "reward": -205.55371514483687
+      },
+      "DDPG (RL)": {
+        "throughput": 3.059313380548159,
+        "total_served": 611.8626761096318,
+        "packet_loss_count": 14.021267424893363,
+        "packet_loss_rate": 0.020518856512415213,
+        "avg_queue_delay": 18.051198886533612,
+        "avg_queue_backlog": 60.04477087122268,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9660361430993373,
+        "total_penalty_cost": 23446.995035123487,
+        "reward": -234.4699503512349
+      },
+      "Static WFQ": {
+        "throughput": 3.0608,
+        "total_served": 612.1600000000001,
+        "packet_loss_count": 3.1261913941915482,
+        "packet_loss_rate": 0.00441987358081645,
+        "avg_queue_delay": 18.45280985203458,
+        "avg_queue_backlog": 61.40410049794284,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9800309748873459,
+        "total_penalty_cost": 28471.04378886063,
+        "reward": -284.7104378886063
+      },
+      "c-\u03bc Rule": {
+        "throughput": 3.0608,
+        "total_served": 612.1600000000001,
+        "packet_loss_count": 16.2834765399327,
+        "packet_loss_rate": 0.0236151773591593,
+        "avg_queue_delay": 18.010704757891688,
+        "avg_queue_backlog": 59.88640756750861,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9621351473811697,
+        "total_penalty_cost": 23903.404644263057,
+        "reward": -239.0340464426306
+      },
+      "Strict PQ": {
+        "throughput": 3.0608,
+        "total_served": 612.1600000000001,
+        "packet_loss_count": 16.2834765399327,
+        "packet_loss_rate": 0.0236151773591593,
+        "avg_queue_delay": 18.010704757891688,
+        "avg_queue_backlog": 59.88640756750861,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9621351473811697,
+        "total_penalty_cost": 23903.404644263057,
+        "reward": -239.0340464426306
+      },
+      "LCQ Rule": {
+        "throughput": 3.0608,
+        "total_served": 612.1600000000001,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 18.517855380602317,
+        "avg_queue_backlog": 61.63741347962385,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.963125273182111,
+        "total_penalty_cost": 52546.442988302835,
+        "reward": -525.4644298830284
+      }
+    }
+  },
+  "Test_5_Inverted_Priority_Load": {
+    "split": "test",
+    "id": 10,
+    "policies": {
+      "SAC (RL)": {
+        "throughput": 3.186200334190679,
+        "total_served": 637.2400668381359,
+        "packet_loss_count": 41.42381193441772,
+        "packet_loss_rate": 0.061992652049158006,
+        "avg_queue_delay": 13.859082757430395,
+        "avg_queue_backlog": 46.02721373413314,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9924695716792448,
+        "total_penalty_cost": 10960.102583315384,
+        "reward": -109.60102583315384
+      },
+      "DDPG (RL)": {
+        "throughput": 3.1863483106584036,
+        "total_served": 637.2696621316807,
+        "packet_loss_count": 38.12995746962596,
+        "packet_loss_rate": 0.05707010482564131,
+        "avg_queue_delay": 14.240828513065537,
+        "avg_queue_backlog": 47.309007520067595,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9933558634187593,
+        "total_penalty_cost": 10983.740657613422,
+        "reward": -109.83740657613423
+      },
+      "Static WFQ": {
+        "throughput": 3.1863732620320855,
+        "total_served": 637.2746524064171,
+        "packet_loss_count": 32.062188889541844,
+        "packet_loss_rate": 0.04793333750169122,
+        "avg_queue_delay": 14.8944455573962,
+        "avg_queue_backlog": 49.47852303016682,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9950870027622039,
+        "total_penalty_cost": 10961.968112360797,
+        "reward": -109.61968112360799
+      },
+      "c-\u03bc Rule": {
+        "throughput": 3.1861998933546625,
+        "total_served": 637.2399786709325,
+        "packet_loss_count": 32.02656208252304,
+        "packet_loss_rate": 0.04809131959935007,
+        "avg_queue_delay": 15.481362160248418,
+        "avg_queue_backlog": 51.40943211378698,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9865731295873529,
+        "total_penalty_cost": 10666.133754864733,
+        "reward": -106.66133754864734
+      },
+      "Strict PQ": {
+        "throughput": 3.1861998933546625,
+        "total_served": 637.2399786709325,
+        "packet_loss_count": 32.02656208252304,
+        "packet_loss_rate": 0.04809131959935007,
+        "avg_queue_delay": 15.481362160248418,
+        "avg_queue_backlog": 51.40943211378698,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.9865731295873529,
+        "total_penalty_cost": 10666.133754864733,
+        "reward": -106.66133754864734
+      },
+      "LCQ Rule": {
+        "throughput": 3.1864,
+        "total_served": 637.28,
+        "packet_loss_count": 0.0,
+        "packet_loss_rate": 0.0,
+        "avg_queue_delay": 17.10824348771371,
+        "avg_queue_backlog": 56.85809999999999,
+        "starvation_incidents": 0.0,
+        "jains_fairness_index": 0.7394305568058764,
+        "total_penalty_cost": 32989.8174280362,
+        "reward": -329.89817428036207
+      }
+    }
+  }
+}

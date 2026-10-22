@@ -1,40 +1,133 @@
-1. The Core Simulator (The "World")
-queue_env.py
-What it is: The Environment.
-Function: This is the router simulator itself. It defines the rules of the physics here: it generates random packets (traffic), puts them in the two queues, drains them based on the bandwidth split it receives, and calculates the final score (the Penalty/Reward based on the 3 and 1 holding costs). Every other script in this folder relies on this file to run.
+================================================================================
+  ORDER OF EXECUTION (TRAINING & DEMONSTRATION)
+================================================================================
 
-2. The Traditional Rules (No AI)
-baselines.py
-What it is: The hard-coded human strategies.
-Function: Contains the mathematical logic for three standard router rules: the c-mu rule (always serve the expensive queue), LCQ (longest queue first), and the fixed 50/50 split. There is no machine learning in this file.
-run_baselines.py
-What it is: The testing script for the human rules.
-Function: It plugs the rules from baselines.py into the simulator (queue_env.py) to see what score they get. It outputs the graph baseline_comparison.png.
+All commands should be run after activating your virtual environment:
+  source /home/parthu/python_aiml_projects/.venv/bin/activate
 
-3. The AI Brains (The Neural Networks)
-ddpg_agent.py
-What it is: The architecture for our first AI model.
-Function: Defines the actual Neural Networks for the DDPG algorithm. It contains the code for the "Actor" (makes decisions), the "Critic" (judges the decisions), and the Replay Buffer (memory).
-sac_agent.py
-What it is: The architecture for our second, more advanced AI model.
-Function: Defines the Neural Networks for the SAC algorithm. Similar to DDPG, but it uses Twin Critics (two judges instead of one) and has built-in entropy tuning (it figures out how much to explore on its own).
+--------------------------------------------------------------------------------
+1. DEMONSTRATION (Fastest: Run complete evaluation in ~8 seconds)
+--------------------------------------------------------------------------------
+Command:
+  python main.py
 
-4. The Training & Execution Scripts (The "Gym")
-train_ddpg.py
-What it is: The training loop for DDPG.
-Function: It creates a blank ddpg_agent, puts it in the queue_env, and forces it to play 300 rounds (episodes) so it can learn and adjust its weights. It outputs reward_curve.png to show how the AI improved over time.
-demo.py
-What it is: A master presentation script.
-Function: This runs the baselines, trains a DDPG agent from scratch, evaluates it, and plots a massive 3-panel summary graph comparing them all (final_demo.png).
-compare_agents.py
-What it is: The final showdown script.
-Function: This script trains both DDPG and SAC, and then pits them against the traditional rules to see which AI algorithm learned the best strategy. It outputs ddpg_vs_sac.png.
+What it does:
+  - Tests SAC, DDPG, and all classical rules (Static WFQ, c-mu, PQ, LCQ).
+  - Evaluates on standard topology + 10 distinct traffic scenarios (5 Train, 5 Unseen Test).
+  - Displays consistent metrics: Avg Reward, Drops, Delay, Throughput, Starvation, Jain's Index.
+  - Updates plot_generalization_comparison.png.
 
-5. The Output Graphs (Images)
-baseline_comparison.png: The line graph showing how the 3 human rules handle traffic queues.
-reward_curve.png: Shows the DDPG agent starting with terrible scores and climbing up to match the optimal score as it learns.
-final_demo.png: The big 3-panel chart (learning curve, queue trajectories, and the final bar chart of costs).
-ddpg_vs_sac.png: A graph directly comparing the learning speed and final queue lengths of DDPG versus SAC.
+Quick Variant (Standard topology only, takes ~3 seconds):
+  python main.py --standard-only
 
-6. System Files
- __pycache__: You can ignore this. Python creates this folder automatically to store compiled bytecode to make your scripts load faster the next time you run them.
+--------------------------------------------------------------------------------
+2. TRAINING (How to train models yourself)
+--------------------------------------------------------------------------------
+Option A: Train BOTH DDPG & SAC on the 5 Traffic Scenarios (~3 minutes)
+Command:
+  python main.py --train --episodes 120
+
+What it does:
+  - Trains DDPG across the 5 training scenarios (saves checkpoint_ddpg_generalization.pth).
+  - Trains SAC across the 5 training scenarios (saves checkpoint_sac_generalization.pth).
+  - Evaluates both trained models against baselines on unseen test scenarios.
+
+Option B: Train Both Agents from scratch on Standard Topology (~2 minutes)
+Command:
+  python compare_agents.py
+
+What it does:
+  - Trains DDPG and SAC for 350 episodes from scratch.
+  - Saves checkpoint_ddpg.pth and checkpoint_sac.pth.
+  - Generates plot_ddpg_vs_sac.png.
+
+
+================================================================================
+  DIRECTORY STRUCTURE & FILE GUIDE (WHAT EACH FILE DOES)
+================================================================================
+
+--- CORE ENGINE & LOGIC ---
+• queue_env.py
+    The discrete-time network simulator. Models the tandem router topology,
+    8 DiffServ priority queues, work-conserving WFQ capacity distribution,
+    packet arrival generators, buffer drops, and dual delay/drop penalty costs.
+
+• baselines.py
+    Contains the classical non-AI scheduling algorithms:
+    - c-mu Rule: Mathematical optimal delay rule under linear holding costs.
+    - Longest Connected Queue (LCQ): Serves queue with maximum instantaneous backlog.
+    - Static WFQ: Fixed priority-tiered bandwidth weights.
+    - Strict Priority Queueing (PQ): Highest priority non-empty queue gets 100%.
+    - Fixed Split: Equal 1/8 bandwidth sharing.
+
+• ddpg_agent.py
+    Implementation of the Deep Deterministic Policy Gradient (DDPG) algorithm.
+    Contains Actor, Critic, Replay Buffer, and Ornstein-Uhlenbeck exploration noise.
+
+• sac_agent.py
+    Implementation of the Soft Actor-Critic (SAC) algorithm.
+    Features Twin Q-Critics (clipped double-Q) and automatic entropy temperature tuning.
+
+• scenarios.py
+    Defines the 10 distinct traffic scenarios (5 training scenarios and 5 reserved
+    out-of-distribution unseen test scenarios) with unique arrival rates, burst
+    probabilities, and dynamic microburst shock profiles.
+
+• metrics.py
+    Standardized network performance and fairness calculations:
+    - Average Queue Delay (via Little's Law)
+    - Packet Drops & Packet Loss Rate
+    - Throughput (packets per tick)
+    - Queue Starvation Incidents
+    - Jain's Fairness Index (Demand Satisfaction Ratio)
+
+--- EXECUTION SCRIPTS ---
+• main.py
+    The master entrypoint for the entire project. Run without arguments to test everything,
+    or use --train to train both agents on the multi-scenario environment.
+
+• evaluate_generalization.py
+    The multi-scenario training and evaluation harness used by main.py.
+
+• compare_agents.py
+    Direct head-to-head training and evaluation script comparing DDPG vs SAC.
+
+--- SAVED NEURAL NETWORK CHECKPOINTS (*.pth) ---
+• checkpoint_ddpg.pth
+    Pre-trained DDPG model weights on the standard environment.
+
+• checkpoint_sac.pth
+    Pre-trained SAC model weights on the standard environment.
+
+• checkpoint_ddpg_generalization.pth
+    Pre-trained DDPG model weights trained across the 5 training scenarios.
+
+--- VISUALIZATION CHARTS (*.png) ---
+• plot_generalization_comparison.png
+    The comprehensive 6-panel chart comparing SAC, DDPG, and baselines across all
+    10 scenarios and showing aggregate unseen test generalization.
+
+• plot_ddpg_vs_sac.png
+    Training curves and queue backlog comparison between DDPG and SAC.
+
+• plot_baseline_comparison.png
+    Comparative queue trajectories of traditional heuristic scheduling rules.
+
+• plot_reward_curve.png
+    Learning curve showing DDPG reward progression over training episodes.
+
+• plot_final_demo.png
+    Multi-panel summary graph comparing learning performance and cost distributions.
+
+--- DATA & DOCUMENTATION ---
+• generalization_results.json
+    Full machine-readable evaluation results across all seeds, scenarios, and policies.
+
+• README.md
+    Project overview, IEEE CASE 2022 research background, and quickstart notes.
+
+• RESEARCH_PAPER_EXPLANATION.md
+    Detailed technical deep-dive into the research paper and viva preparation guide.
+
+• research_paper.pdf
+    The original published research paper from IEEE CASE 2022.
