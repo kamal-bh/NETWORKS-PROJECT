@@ -15,6 +15,8 @@ class SACActorNetwork(nn.Module):
         self.log_std_max = log_std_max
         self.action_dim = action_dim
 
+        # Base QoS priority logits corresponding to DiffServ hierarchy
+        self.register_buffer("base_logits", torch.tensor([2.2, 1.8, 1.5, 1.2, 0.9, 0.6, 0.3, 0.0]))
         self.trunk = nn.Sequential(
             nn.Linear(state_dim, hidden),
             nn.ReLU(),
@@ -25,11 +27,9 @@ class SACActorNetwork(nn.Module):
         self.mean_head = nn.Linear(hidden, action_dim)
         self.log_std_head = nn.Linear(hidden, action_dim)
 
-        # Prior bias initialization toward standard QoS priority weights
-        prior_logits = torch.tensor([1.8, 1.5, 1.2, 0.9, 0.6, 0.3, 0.0, -0.5])
         with torch.no_grad():
             self.mean_head.weight.data.mul_(0.01)
-            self.mean_head.bias.data.copy_(prior_logits)
+            self.mean_head.bias.data.zero_()
             self.log_std_head.weight.data.mul_(0.01)
             self.log_std_head.bias.data.fill_(-2.0)
 
@@ -45,8 +45,12 @@ class SACActorNetwork(nn.Module):
         dist = Normal(mean, std)
         z = dist.rsample()
 
-        action = F.softmax(z, dim=-1)
-        det_action = F.softmax(mean, dim=-1)
+        # Dynamic residual modulation around base QoS logits
+        delta = torch.tanh(z) * 1.2
+        det_delta = torch.tanh(mean) * 1.2
+
+        action = F.softmax(self.base_logits + delta, dim=-1)
+        det_action = F.softmax(self.base_logits + det_delta, dim=-1)
 
         # Log prob of Gaussian sample for entropy regularization
         log_prob = dist.log_prob(z).sum(dim=-1, keepdim=True)

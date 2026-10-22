@@ -10,23 +10,21 @@ class Actor(nn.Module):
     def __init__(self, state_dim=8, action_dim=8, hidden=128):
         super(Actor, self).__init__()
 
+        # Base QoS priority logits corresponding to DiffServ hierarchy
+        self.register_buffer("base_logits", torch.tensor([2.2, 1.8, 1.5, 1.2, 0.9, 0.6, 0.3, 0.0]))
         self.network = nn.Sequential(
             nn.Linear(state_dim, hidden),
             nn.ReLU(),
             nn.Linear(hidden, hidden),
             nn.ReLU(),
             nn.Linear(hidden, action_dim),
-            nn.Softmax(dim=-1),
+            nn.Tanh(),
         )
 
-        # Prior bias initialization toward standard QoS priority weights
-        prior_logits = torch.tensor([1.8, 1.5, 1.2, 0.9, 0.6, 0.3, 0.0, -0.5])
-        with torch.no_grad():
-            self.network[-2].weight.data.mul_(0.01)
-            self.network[-2].bias.data.copy_(prior_logits)
-
     def forward(self, state):
-        return self.network(state)
+        # Dynamically modulates base QoS weights by up to ±1.2 logits based on live queue backlogs
+        delta = self.network(state) * 1.2
+        return torch.softmax(self.base_logits + delta, dim=-1)
 
 
 class Critic(nn.Module):

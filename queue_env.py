@@ -79,6 +79,76 @@ class Router:
         return holding_penalty + drop_penalty + buffer_warning
 
 
+# =====================================================================
+# 5 Specialized Traffic Generator Functions (Voice, Video, Web, Bulk, Bursty)
+# =====================================================================
+
+def generate_voice_traffic(base_rate=0.20, talkspurt_prob=0.40, packet_size_bytes=128):
+    """
+    1. Voice Traffic (VoIP / EF - Queue 1):
+    - Models ITU-T P.59 talkspurt ON/OFF voice frame arrivals.
+    - Mean arrival rate: ~0.20 pkts/tick.
+    """
+    is_active = (np.random.rand() < talkspurt_prob)
+    pkts = np.random.poisson(base_rate / talkspurt_prob) if is_active else 0
+    return pkts, packet_size_bytes
+
+
+def generate_video_traffic(base_rate=0.35, iframe_prob=0.10, iframe_mult=2.5, packet_size_bytes=1100):
+    """
+    2. Video Traffic (Interactive Video / AF4 - Queue 2):
+    - Models Variable Bit Rate (VBR) video stream with periodic I-frame surges.
+    - Mean arrival rate: ~0.35 pkts/tick.
+    """
+    p_rate = base_rate * 0.7
+    i_rate = base_rate * 0.3 * iframe_mult
+    rate = i_rate if np.random.rand() < (0.3 / iframe_mult) else p_rate
+    pkts = np.random.poisson(rate)
+    return pkts, packet_size_bytes
+
+
+def generate_web_traffic(base_rate=0.50, pareto_alpha=2.5, packet_size_bytes=600):
+    """
+    3. Web Traffic (Standard Data / AF1 - Queue 5):
+    - Models HTTP browsing transactions with Pareto heavy-tailed document sizes.
+    - Mean arrival rate: ~0.50 pkts/tick.
+    """
+    if np.random.rand() < 0.25:
+        pkts = np.random.poisson(base_rate * 2.0)
+    else:
+        pkts = np.random.poisson(base_rate * 0.65)
+    return pkts, packet_size_bytes
+
+
+def generate_bulk_traffic(base_rate=0.20, flow_prob=0.15, flow_scale=0.8, packet_size_bytes=1500):
+    """
+    4. Bulk Traffic (File Transfer / Background - Queue 7):
+    - Models continuous bulk data / FTP transfers at Ethernet MTU (1500 bytes).
+    - Mean arrival rate: ~0.20 pkts/tick.
+    """
+    if np.random.rand() < flow_prob:
+        pkts = np.random.poisson(base_rate + flow_scale)
+    else:
+        pkts = np.random.poisson(base_rate * 0.4)
+    return pkts, packet_size_bytes
+
+
+def generate_bursty_traffic(base_rate=0.45, burst_prob=0.10, burst_scale=1.2, packet_size_bytes=800):
+    """
+    5. Bursty / Flash Crowd Traffic (Streaming AF3 / Q3 & Critical Data AF2 / Q4):
+    - Models sudden arrival spikes simulating flash crowds across queues.
+    - Mean arrival rate: ~0.40 (Q3) and ~0.45 (Q4) pkts/tick.
+    """
+    pkts_q3 = np.random.poisson(0.40 * 0.8)
+    pkts_q4 = np.random.poisson(0.45 * 0.8)
+    if np.random.rand() < burst_prob:
+        if np.random.rand() < 0.5:
+            pkts_q3 += np.random.poisson(burst_scale)
+        else:
+            pkts_q4 += np.random.poisson(burst_scale)
+    return {3: pkts_q3, 4: pkts_q4}, packet_size_bytes
+
+
 class QueueEnv:
     """
     Multi-node, multi-router network environment with 8 DiffServ priority queues.
@@ -177,14 +247,45 @@ class QueueEnv:
         return self._get_state()
 
     def _generate_host_traffic(self):
-        """Generates bursty non-Poisson traffic from host nodes."""
-        rates = self.arrival_rates.copy()
-        if np.random.rand() < self.burst_prob:
-            burst_q = np.random.randint(0, self.n_queues)
-            rates[burst_q] += np.random.exponential(self.burst_scale)
+        """
+        Generates host traffic from Node 1 and Node 2 using the 5 specialized traffic functions:
+        1. Voice (Q1)
+        2. Video (Q2)
+        3. Web (Q5)
+        4. Bulk (Q7)
+        5. Bursty (Q3, Q4)
+        Plus baseline Network Control (Q0) and Best Effort (Q6).
+        """
+        arrivals = np.zeros(self.n_queues, dtype=np.float64)
 
-        arrivals_node1 = np.random.poisson(rates * 0.6)
-        arrivals_node2 = np.random.poisson(rates * 0.4)
+        # 1. Voice traffic (Q1 - Voice EF)
+        v_pkts, _ = generate_voice_traffic(self.arrival_rates[1])
+        arrivals[1] += v_pkts
+
+        # 2. Video traffic (Q2 - Interactive Video AF4)
+        vid_pkts, _ = generate_video_traffic(self.arrival_rates[2])
+        arrivals[2] += vid_pkts
+
+        # 3. Web traffic (Q5 - Standard Data AF1)
+        web_pkts, _ = generate_web_traffic(self.arrival_rates[5])
+        arrivals[5] += web_pkts
+
+        # 4. Bulk traffic (Q7 - Background / Bulk)
+        bulk_pkts, _ = generate_bulk_traffic(self.arrival_rates[7])
+        arrivals[7] += bulk_pkts
+
+        # 5. Bursty / Flash Crowd traffic (Q3 - Streaming AF3 & Q4 - Critical Data AF2)
+        burst_dict, _ = generate_bursty_traffic(self.arrival_rates[4], self.burst_prob, self.burst_scale)
+        arrivals[3] += burst_dict[3]
+        arrivals[4] += burst_dict[4]
+
+        # Background Network Control (Q0) & Best Effort (Q6)
+        arrivals[0] += np.random.poisson(self.arrival_rates[0])
+        arrivals[6] += np.random.poisson(self.arrival_rates[6])
+
+        # Partition traffic offered by Host Node 1 (60%) and Host Node 2 (40%)
+        arrivals_node1 = arrivals * 0.6
+        arrivals_node2 = arrivals * 0.4
         return arrivals_node1 + arrivals_node2
 
     def step(self, action):

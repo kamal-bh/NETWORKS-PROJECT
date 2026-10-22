@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -6,6 +7,7 @@ from baselines  import cmu_rule, lcq_rule, fixed_split_rule, wfq_static_rule
 from ddpg_agent import DDPGAgent
 from sac_agent  import SACAgent
 
+EVAL_ONLY      = "--eval-only" in sys.argv
 EPISODE_LENGTH = 200    # timesteps per episode
 NUM_EPISODES   = 350    # training episodes
 EVAL_SEEDS     = 5      # seeds to average over during evaluation
@@ -162,33 +164,55 @@ print(f"  Static WFQ → avg reward: {wfq_avg_r:9.1f} | drops: {wfq_avg_d:.0f} |
 print()
 
 print("=" * 65)
-print(f"  PHASE 2: Training DDPG Agent ({NUM_EPISODES} episodes, 8 queues)...")
-print("=" * 65)
-ddpg = DDPGAgent(state_dim=N_QUEUES, action_dim=N_QUEUES, hidden=128)
-if ddpg.load("ddpg_checkpoint.pth"):
-    print("  ✓ Loaded existing DDPG checkpoint (continuing training)...")
+if EVAL_ONLY:
+    print("  PHASE 2: Evaluating Trained DDPG Agent...")
+    print("=" * 65)
+    ddpg = DDPGAgent(state_dim=N_QUEUES, action_dim=N_QUEUES, hidden=128)
+    if ddpg.load("ddpg_checkpoint.pth"):
+        print("  ✓ Loaded existing DDPG checkpoint from ddpg_checkpoint.pth")
+    else:
+        print("  ! No checkpoint found; evaluating uninitialized DDPG...")
+    ddpg_eval_r, ddpg_eval_q, ddpg_eval_d = evaluate_agent(ddpg, "ddpg")
+    print(f"  ✓ DDPG avg reward: {ddpg_eval_r:.1f} | drops: {ddpg_eval_d:.0f}")
 else:
-    print("  ○ Training DDPG from scratch...")
-ddpg_rewards = train_ddpg(ddpg)
-ddpg.save("ddpg_checkpoint.pth")
-ddpg_eval_r, ddpg_eval_q, ddpg_eval_d = evaluate_agent(ddpg, "ddpg")
-print(f"  ✓ DDPG final avg reward: {ddpg_eval_r:.1f} | drops: {ddpg_eval_d:.0f}")
-print("  ✓ Saved updated DDPG weights to ddpg_checkpoint.pth")
+    print(f"  PHASE 2: Training DDPG Agent ({NUM_EPISODES} episodes, 8 queues)...")
+    print("=" * 65)
+    ddpg = DDPGAgent(state_dim=N_QUEUES, action_dim=N_QUEUES, hidden=128)
+    if ddpg.load("ddpg_checkpoint.pth"):
+        print("  ✓ Loaded existing DDPG checkpoint (continuing training)...")
+    else:
+        print("  ○ Training DDPG from scratch...")
+    ddpg_rewards = train_ddpg(ddpg)
+    ddpg.save("ddpg_checkpoint.pth")
+    ddpg_eval_r, ddpg_eval_q, ddpg_eval_d = evaluate_agent(ddpg, "ddpg")
+    print(f"  ✓ DDPG final avg reward: {ddpg_eval_r:.1f} | drops: {ddpg_eval_d:.0f}")
+    print("  ✓ Saved updated DDPG weights to ddpg_checkpoint.pth")
 print()
 
 print("=" * 65)
-print(f"  PHASE 3: Training SAC Agent ({NUM_EPISODES} episodes, 8 queues)...")
-print("=" * 65)
-sac = SACAgent(state_dim=N_QUEUES, action_dim=N_QUEUES, hidden=128)
-if sac.load("sac_checkpoint.pth"):
-    print("  ✓ Loaded existing SAC checkpoint (continuing training)...")
+if EVAL_ONLY:
+    print("  PHASE 3: Evaluating Trained SAC Agent...")
+    print("=" * 65)
+    sac = SACAgent(state_dim=N_QUEUES, action_dim=N_QUEUES, hidden=128)
+    if sac.load("sac_checkpoint.pth"):
+        print("  ✓ Loaded existing SAC checkpoint from sac_checkpoint.pth")
+    else:
+        print("  ! No checkpoint found; evaluating uninitialized SAC...")
+    sac_eval_r, sac_eval_q, sac_eval_d = evaluate_agent(sac, "sac")
+    print(f"  ✓ SAC avg reward: {sac_eval_r:.1f} | drops: {sac_eval_d:.0f}")
 else:
-    print("  ○ Training SAC from scratch...")
-sac_rewards = train_sac(sac)
-sac.save("sac_checkpoint.pth")
-sac_eval_r, sac_eval_q, sac_eval_d = evaluate_agent(sac, "sac")
-print(f"  ✓ SAC final avg reward: {sac_eval_r:.1f} | drops: {sac_eval_d:.0f}")
-print("  ✓ Saved updated SAC weights to sac_checkpoint.pth")
+    print(f"  PHASE 3: Training SAC Agent ({NUM_EPISODES} episodes, 8 queues)...")
+    print("=" * 65)
+    sac = SACAgent(state_dim=N_QUEUES, action_dim=N_QUEUES, hidden=128)
+    if sac.load("sac_checkpoint.pth"):
+        print("  ✓ Loaded existing SAC checkpoint (continuing training)...")
+    else:
+        print("  ○ Training SAC from scratch...")
+    sac_rewards = train_sac(sac)
+    sac.save("sac_checkpoint.pth")
+    sac_eval_r, sac_eval_q, sac_eval_d = evaluate_agent(sac, "sac")
+    print(f"  ✓ SAC final avg reward: {sac_eval_r:.1f} | drops: {sac_eval_d:.0f}")
+    print("  ✓ Saved updated SAC weights to sac_checkpoint.pth")
 print()
 
 print("=" * 65)
@@ -198,24 +222,38 @@ print("=" * 65)
 fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(16, 6))
 fig.suptitle("DDPG vs SAC in 8-Queue Multi-Router Environment", fontsize=14, fontweight="bold")
 
-# Panel (a): Reward convergence
-ax_a.plot(ddpg_rewards, color="#aed6f1", linewidth=0.7, alpha=0.35)
-ax_a.plot(sac_rewards,  color="#f9c8c8", linewidth=0.7, alpha=0.35)
+if EVAL_ONLY:
+    # Panel (a): Overall Reward Comparison across all policies
+    policies_eval = ["c-μ Rule", "LCQ Rule", "Static WFQ", "DDPG", "SAC"]
+    rewards_eval = [cmu_avg_r, lcq_avg_r, wfq_avg_r, ddpg_eval_r, sac_eval_r]
+    colors_eval = ["#7f8c8d", "#27ae60", "#f39c12", "#2980b9", "#c0392b"]
+    bars_a = ax_a.bar(policies_eval, rewards_eval, color=colors_eval, alpha=0.85, width=0.45)
+    ax_a.set_title("(a) Average Cumulative Episode Reward (Higher = Better)", fontsize=11, fontweight="bold", loc="left")
+    ax_a.set_ylabel("Total Episode Reward (Negative Cost)", fontsize=10)
+    ax_a.grid(True, axis="y", alpha=0.3)
+    for b in bars_a:
+        h = b.get_height()
+        va = 'bottom' if h < 0 else 'top'
+        ax_a.text(b.get_x() + b.get_width() / 2., h + (-15 if h < 0 else 5), f'{h:.1f}', ha='center', va=va, fontsize=9, fontweight='bold')
+else:
+    # Panel (a): Reward convergence across training episodes
+    ax_a.plot(ddpg_rewards, color="#aed6f1", linewidth=0.7, alpha=0.35)
+    ax_a.plot(sac_rewards,  color="#f9c8c8", linewidth=0.7, alpha=0.35)
 
-ax_a.plot(rolling_avg(ddpg_rewards), color="#2980b9", linewidth=2.2,
-          label=f"DDPG (eval: {ddpg_eval_r:.0f})")
-ax_a.plot(rolling_avg(sac_rewards),  color="#c0392b", linewidth=2.2,
-          label=f"SAC  (eval: {sac_eval_r:.0f})")
+    ax_a.plot(rolling_avg(ddpg_rewards), color="#2980b9", linewidth=2.2,
+              label=f"DDPG (eval: {ddpg_eval_r:.0f})")
+    ax_a.plot(rolling_avg(sac_rewards),  color="#c0392b", linewidth=2.2,
+              label=f"SAC  (eval: {sac_eval_r:.0f})")
 
-ax_a.axhline(lcq_avg_r, color="#27ae60", linestyle="--", linewidth=1.6, label=f"LCQ Rule: {lcq_avg_r:.0f}")
-ax_a.axhline(wfq_avg_r, color="#f39c12", linestyle="--", linewidth=1.4, label=f"Static WFQ: {wfq_avg_r:.0f}")
-ax_a.axhline(cmu_avg_r, color="#7f8c8d", linestyle=":",  linewidth=1.2, label=f"c-μ Rule: {cmu_avg_r:.0f}")
+    ax_a.axhline(lcq_avg_r, color="#27ae60", linestyle="--", linewidth=1.6, label=f"LCQ Rule: {lcq_avg_r:.0f}")
+    ax_a.axhline(wfq_avg_r, color="#f39c12", linestyle="--", linewidth=1.4, label=f"Static WFQ: {wfq_avg_r:.0f}")
+    ax_a.axhline(cmu_avg_r, color="#7f8c8d", linestyle=":",  linewidth=1.2, label=f"c-μ Rule: {cmu_avg_r:.0f}")
 
-ax_a.set_title("(a) Reward Convergence Across Training Episodes", fontsize=11, fontweight="bold", loc="left")
-ax_a.set_xlabel("Episode", fontsize=10)
-ax_a.set_ylabel("Total Episode Reward (Negative Cost)", fontsize=10)
-ax_a.legend(fontsize=9, loc="lower right", framealpha=0.9)
-ax_a.grid(True, alpha=0.3)
+    ax_a.set_title("(a) Reward Convergence Across Training Episodes", fontsize=11, fontweight="bold", loc="left")
+    ax_a.set_xlabel("Episode", fontsize=10)
+    ax_a.set_ylabel("Total Episode Reward (Negative Cost)", fontsize=10)
+    ax_a.legend(fontsize=9, loc="lower right", framealpha=0.9)
+    ax_a.grid(True, alpha=0.3)
 
 # Panel (b): High-priority Q0 Delay Proxy + Average Backlog
 policies = ["c-μ Rule", "LCQ Rule", "Static WFQ", "DDPG", "SAC"]
